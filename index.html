@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Koala.ai — pomoc w nauce</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f4f7f2;
+  color: #243024;
+}
+
+button,
+textarea,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.header {
+  background: #315c3b;
+  color: white;
+  padding: 18px 25px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.logo {
+  font-size: 25px;
+  font-weight: bold;
+}
+
+.user-info {
+  font-size: 14px;
+}
+
+.layout {
+  display: flex;
+  min-height: calc(100vh - 70px);
+}
+
+.sidebar {
+  width: 230px;
+  background: white;
+  border-right: 1px solid #dce5dc;
+  padding: 18px;
+}
+
+.sidebar button {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 13px;
+  margin-bottom: 7px;
+  border-radius: 10px;
+  text-align: left;
+  color: #29402d;
+}
+
+.sidebar button:hover,
+.sidebar button.active {
+  background: #e3f0e4;
+}
+
+.content {
+  flex: 1;
+  padding: 35px;
+  max-width: 1200px;
+  margin: auto;
+  width: 100%;
+}
+
+.page {
+  display: none;
+}
+
+.page.active {
+  display: block;
+}
+
+.section-title {
+  margin-bottom: 25px;
+}
+
+.section-title h1,
+.section-title h2 {
+  margin-bottom: 8px;
+}
+
+.card {
+  background: white;
+  border: 1px solid #dce5dc;
+  border-radius: 16px;
+  padding: 25px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 14px rgba(30, 60, 35, 0.05);
+}
+
+.button {
+  background: #315c3b;
+  color: white;
+  border: none;
+  border-radius: 9px;
+  padding: 11px 18px;
+}
+
+.button:hover {
+  background: #264b30;
+}
+
+.login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: linear-gradient(135deg, #e9f4e8, #f8fbf7);
+}
+
+.login-box {
+  width: 100%;
+  max-width: 420px;
+  background: white;
+  border-radius: 20px;
+  padding: 35px;
+  box-shadow: 0 12px 40px rgba(30, 60, 35, 0.12);
+}
+
+.login-box h1 {
+  text-align: center;
+  margin-top: 0;
+}
+
+.login-box input {
+  width: 100%;
+  padding: 13px;
+  margin: 7px 0 14px;
+  border: 1px solid #cbd8cc;
+  border-radius: 9px;
+}
+
+.login-box .button {
+  width: 100%;
+  margin-top: 5px;
+}
+
+.login-error {
+  color: #b3261e;
+  margin-top: 15px;
+  min-height: 20px;
+  text-align: center;
+}
+
+.ai-box {
+  background: white;
+  border: 1px solid #dce5dc;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 6px 25px rgba(30, 60, 35, 0.07);
+}
+
+.ai-header {
+  background: #315c3b;
+  color: white;
+  padding: 22px;
+}
+
+.ai-header h3 {
+  margin: 0 0 7px;
+}
+
+.ai-header p {
+  margin: 0;
+  opacity: .9;
+}
+
+.ai-messages {
+  height: 470px;
+  overflow-y: auto;
+  padding: 22px;
+  background: #f7faf6;
+}
+
+.ai-message {
+  max-width: 85%;
+  padding: 13px 16px;
+  border-radius: 15px;
+  margin-bottom: 12px;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.ai-message.bot {
+  background: white;
+  border: 1px solid #dce5dc;
+  margin-right: auto;
+}
+
+.ai-message.user {
+  background: #dcefdc;
+  margin-left: auto;
+}
+
+.ai-input-area {
+  display: flex;
+  gap: 10px;
+  padding: 15px;
+  background: white;
+  border-top: 1px solid #dce5dc;
+}
+
+.ai-input-area textarea {
+  flex: 1;
+  min-height: 52px;
+  max-height: 150px;
+  resize: vertical;
+  padding: 13px;
+  border: 1px solid #cbd8cc;
+  border-radius: 10px;
+}
+
+.ai-send {
+  align-self: flex-end;
+  white-space: nowrap;
+}
+
+.info-box {
+  background: #edf6ed;
+  border-left: 4px solid #315c3b;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.logout {
+  background: #8b3a3a !important;
+  color: white !important;
+}
+
+.hidden {
+  display: none !important;
+}
+
+@media (max-width: 750px) {
+  .layout {
+    display: block;
+  }
+
+  .sidebar {
+    width: 100%;
+    border-right: 0;
+    border-bottom: 1px solid #dce5dc;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+  }
+
+  .sidebar button {
+    min-width: 150px;
+    margin: 0;
+  }
+
+  .content {
+    padding: 20px 15px;
+  }
+
+  .header {
+    padding: 15px;
+  }
+
+  .ai-input-area {
+    flex-direction: column;
+  }
+
+  .ai-send {
+    width: 100%;
+  }
+
+  .ai-messages {
+    height: 55vh;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGOWANIE -->
+<div id="loginScreen" class="login-screen">
+
+  <div class="login-box">
+
+    <h1>🐨 Koala.ai</h1>
+
+    <p style="text-align:center;">
+      Twój pomocnik do nauki
+    </p>
+
+    <label for="loginName">Nazwa użytkownika</label>
+    <input
+      id="loginName"
+      type="text"
+      placeholder="Wpisz nazwę użytkownika"
+      autocomplete="username"
+    >
+
+    <label for="loginPassword">Hasło</label>
+    <input
+      id="loginPassword"
+      type="password"
+      placeholder="Wpisz hasło"
+      autocomplete="current-password"
+    >
+
+    <button class="button" onclick="login()">
+      Zaloguj się
+    </button>
+
+    <div id="loginError" class="login-error"></div>
+
+    <div class="info-box" style="margin-top:20px;font-size:13px;">
+      Wersja lokalna Koala.ai korzysta z Twojego lokalnego modelu AI.
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- GŁÓWNA STRONA -->
+<div id="mainApp" class="hidden">
+
+  <header class="header">
+
+    <div class="logo">
+      🐨 Koala.ai
+    </div>
+
+    <div class="user-info">
+      Zalogowany: <strong id="loggedUser">---</strong>
+    </div>
+
+  </header>
+
+
+  <div class="layout">
+
+    <aside class="sidebar">
+
+      <button
+        id="navHome"
+        class="active"
+        onclick="showPage('home', this)"
+      >
+        🏠 Start
+      </button>
+
+      <button
+        id="navKoala"
+        onclick="showPage('koala', this)"
+      >
+        🐨 Koala.ai
+      </button>
+
+      <button
+        onclick="showPage('about', this)"
+      >
+        📚 O Koali
+      </button>
+
+      <button
+        onclick="showPage('help', this)"
+      >
+        ❓ Pomoc
+      </button>
+
+      <button
+        class="logout"
+        onclick="logout()"
+      >
+        🚪 Wyloguj
+      </button>
+
+    </aside>
+
+
+    <main class="content">
+
+
+      <!-- START -->
+      <section id="home" class="page active">
+
+        <div class="section-title">
+
+          <h1>Witaj w Koala.ai 🐨</h1>
+
+          <p>
+            Twój pomocnik do zadań, nauki i wyjaśniania materiału.
+          </p>
+
+        </div>
+
+
+        <div class="card">
+
+          <h2>🐨 Miło Cię widzieć!</h2>
+
+          <p>
+            Koala.ai może pomóc Ci zrozumieć zadania,
+            wyjaśnić trudny temat i przeprowadzić Cię
+            przez rozwiązanie krok po kroku.
+          </p>
+
+          <button
+            class="button"
+            onclick="openKoala()"
+          >
+            Przejdź do Koala.ai
+          </button>
+
+        </div>
+
+
+        <div class="card">
+
+          <h2>💡 Jak korzystać?</h2>
+
+          <p>
+            Wybierz zakładkę <strong>Koala.ai</strong>,
+            wpisz swoje pytanie i naciśnij
+            <strong>Wyślij 🐨</strong>.
+          </p>
+
+          <p>
+            Możesz pytać między innymi o matematykę,
+            fizykę, język polski, angielski i wiele innych tematów.
+          </p>
+
+        </div>
+
+      </section>
+
+
+      <!-- KOALA -->
+      <section id="koala" class="page">
+
+        <div class="section-title">
+
+          <h2>🐨 Koala.ai</h2>
+
+          <p>
+            Twój pomocnik do zadań, nauki i wyjaśniania materiału.
+          </p>
+
+        </div>
+
+
+        <div class="ai-box">
+
+          <div class="ai-header">
+
+            <h3>
+              🐨 Koala.ai — pomoc w nauce
+            </h3>
+
+            <p>
+              Napisz zadanie lub pytanie,
+              a Koala pomoże Ci je zrozumieć krok po kroku.
+            </p>
+
+          </div>
+
+
+          <div
+            id="aiMessages"
+            class="ai-messages"
+          >
+
+            <div class="ai-message bot">
+              Cześć! 🐨 Jestem Koala.ai.
+
+              Napisz mi, z czym masz problem.
+
+              Mogę pomóc Ci zrozumieć zadanie,
+              wyjaśnić temat albo sprawdzić tok rozumowania.
+            </div>
+
+          </div>
+
+
+          <div class="ai-input-area">
+
+            <textarea
+              id="aiInput"
+              placeholder="Np. Wyjaśnij mi równania kwadratowe..."
+              onkeydown="handleAIKey(event)"
+            ></textarea>
+
+            <button
+              class="button ai-send"
+              onclick="askKoala()"
+            >
+              Wyślij 🐨
+            </button>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- O KOALI -->
+      <section id="about" class="page">
+
+        <div class="section-title">
+
+          <h2>📚 O Koala.ai</h2>
+
+        </div>
+
+        <div class="card">
+
+          <h3>🐨 Twój pomocnik w nauce</h3>
+
+          <p>
+            Koala.ai została zaprojektowana jako pomoc
+            dla uczniów w nauce i rozwiązywaniu zadań.
+          </p>
+
+          <p>
+            System wykorzystuje lokalny model językowy,
+            dzięki czemu odpowiedzi generowane są na Twoim komputerze.
+          </p>
+
+        </div>
+
+      </section>
+
+
+      <!-- POMOC -->
+      <section id="help" class="page">
+
+        <div class="section-title">
+
+          <h2>❓ Pomoc</h2>
+
+        </div>
+
+        <div class="card">
+
+          <h3>Jak zadać pytanie?</h3>
+
+          <p>
+            Wpisz pytanie w polu Koala.ai i kliknij
+            „Wyślij 🐨”.
+          </p>
+
+          <h3>Enter</h3>
+
+          <p>
+            Enter wysyła wiadomość.
+          </p>
+
+          <h3>Shift + Enter</h3>
+
+          <p>
+            Shift + Enter pozwala przejść do nowej linii.
+          </p>
+
+        </div>
+
+      </section>
+
+
+    </main>
+
+  </div>
+
+</div>
+
+
+<script>
+
+/* =========================================================
+   KONFIGURACJA
+   ========================================================= */
+
+const GOOGLE_SHEETS_URL =
+  "https://script.google.com/macros/s/AKfycbyIuQFNHy5-TQLsn_Eks8Mw-A7Mhup2-Mc_Z_1J6eCcnNj8X977H52SrboV0ZkOGqakrA/exec";
+
+
+const KOALA_API_URL =
+  "https://slides-audio-flooring-bald.trycloudflare.com/api/chat";
+
+/* =========================================================
+   ZMIENNE
+   ========================================================= */
+
+let role = "guest";
+let currentUser = null;
+
+
+/* =========================================================
+   PROSTE LOGOWANIE
+   ========================================================= */
+
+function login() {
+
+  const name =
+    document
+      .getElementById("loginName")
+      .value
+      .trim();
+
+  const password =
+    document
+      .getElementById("loginPassword")
+      .value;
+
+  const error =
+    document.getElementById("loginError");
+
+
+  if (!name || !password) {
+
+    error.textContent =
+      "Wpisz nazwę użytkownika i hasło.";
+
+    return;
+  }
+
+
+  /*
+    Tutaj zachowujemy możliwość późniejszego
+    podłączenia prawdziwego logowania z Google Sheets.
+
+    Na razie logowanie lokalne pozwala uruchomić
+    stronę bez dodatkowego serwera.
+  */
+
+  currentUser = name;
+  role = "student";
+
+
+  localStorage.setItem(
+    "koala_user",
+    name
+  );
+
+
+  document
+    .getElementById("loggedUser")
+    .textContent = name;
+
+
+  document
+    .getElementById("loginScreen")
+    .classList.add("hidden");
+
+
+  document
+    .getElementById("mainApp")
+    .classList.remove("hidden");
+
+
+  error.textContent = "";
+}
+
+
+/* =========================================================
+   WYLOGOWANIE
+   ========================================================= */
+
+function logout() {
+
+  currentUser = null;
+  role = "guest";
+
+  localStorage.removeItem(
+    "koala_user"
+  );
+
+
+  document
+    .getElementById("mainApp")
+    .classList.add("hidden");
+
+
+  document
+    .getElementById("loginScreen")
+    .classList.remove("hidden");
+
+
+  document
+    .getElementById("loginName")
+    .value = "";
+
+  document
+    .getElementById("loginPassword")
+    .value = "";
+}
+
+
+/* =========================================================
+   STRONY
+   ========================================================= */
+
+function showPage(
+  pageId,
+  button
+) {
+
+  document
+    .querySelectorAll(".page")
+    .forEach(page => {
+
+      page.classList.remove("active");
+
+    });
+
+
+  const page =
+    document.getElementById(pageId);
+
+  if (page) {
+    page.classList.add("active");
+  }
+
+
+  document
+    .querySelectorAll(".sidebar button")
+    .forEach(btn => {
+
+      btn.classList.remove("active");
+
+    });
+
+
+  if (button) {
+    button.classList.add("active");
+  }
+}
+
+
+/* =========================================================
+   OTWIERANIE KOALI
+   ========================================================= */
+
+function openKoala() {
+
+  const button =
+    document.getElementById("navKoala");
+
+  showPage(
+    "koala",
+    button
+  );
+
+}
+
+
+/* =========================================================
+   FILTR PRZEKLEŃSTW
+   ========================================================= */
+
+const PROFANITY_PATTERNS = [
+
+  /\bkurw\w*/i,
+
+  /\bchuj\w*/i,
+
+  /\bjeb\w*/i,
+
+  /\bpierd\w*/i,
+
+  /\bspierdal\w*/i,
+
+  /\bskurw\w*/i,
+
+  /\bcip\w*/i
+
+];
+
+
+function containsProfanity(text) {
+
+  return PROFANITY_PATTERNS.some(
+    pattern => pattern.test(text)
+  );
+
+}
+
+
+/* =========================================================
+   CZYSZCZENIE MARKDOWN
+   ========================================================= */
+
+function cleanAIText(text) {
+
+  return String(text)
+
+    .replace(/\*\*/g, "")
+
+    .replace(/###/g, "")
+
+    .replace(/##/g, "")
+
+    .replace(/#/g, "")
+
+    .replace(/`/g, "")
+
+    .replace(/\r\n/g, "\n")
+
+    .trim();
+
+}
+
+
+/* =========================================================
+   DODAWANIE WIADOMOŚCI
+   ========================================================= */
+
+function addAIMessage(
+  text,
+  type
+) {
+
+  const messages =
+    document.getElementById(
+      "aiMessages"
+    );
+
+
+  const message =
+    document.createElement(
+      "div"
+    );
+
+
+  message.className =
+    "ai-message " +
+    type;
+
+
+  if (type === "bot") {
+
+    message.textContent =
+      cleanAIText(text);
+
+  } else {
+
+    message.textContent =
+      text;
+
+  }
+
+
+  messages.appendChild(
+    message
+  );
+
+
+  messages.scrollTop =
+    messages.scrollHeight;
+}
+
+
+/* =========================================================
+   KOALA AI
+   ========================================================= */
+
+async function askKoala() {
+
+  if (role === "guest") {
+
+    addAIMessage(
+      "🔒 Zaloguj się, aby korzystać z Koala.ai.",
+      "bot"
+    );
+
+    return;
+  }
+
+
+  const input =
+    document.getElementById(
+      "aiInput"
+    );
+
+
+  const question =
+    input.value.trim();
+
+
+  if (!question) {
+    return;
+  }
+
+
+  /*
+    Pokazujemy wiadomość użytkownika.
+  */
+
+  addAIMessage(
+    question,
+    "user"
+  );
+
+
+  input.value = "";
+
+
+  /*
+    FILTR PRZEKLEŃSTW
+
+    Wiadomość nie jest wysyłana do AI.
+  */
+
+  if (containsProfanity(question)) {
+
+    addAIMessage(
+      "🐨 Proszę, nie przeklinaj. Porozmawiajmy kulturalnie. 😊",
+      "bot"
+    );
+
+    return;
+  }
+
+
+  /*
+    Sprawdzenie endpointu.
+  */
+
+  if (!KOALA_API_URL) {
+
+    addAIMessage(
+      "🐨 Koala.ai nie ma ustawionego adresu serwera AI.",
+      "bot"
+    );
+
+    return;
+  }
+
+
+  /*
+    Komunikat oczekiwania.
+  */
+
+  addAIMessage(
+    "⏳ Koala myśli...",
+    "bot"
+  );
+
+
+  try {
+
+    const response =
+      await fetch(
+        KOALA_API_URL,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+              message:
+                question
+            })
+        }
+      );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        "HTTP " +
+        response.status
+      );
+
+    }
+
+
+    const result =
+      await response.json();
+
+
+    /*
+      Usuwamy komunikat
+      "Koala myśli..."
+    */
+
+    const messages =
+      document.getElementById(
+        "aiMessages"
+      );
+
+
+    const last =
+      messages.lastElementChild;
+
+
+    if (
+      last &&
+      last.textContent ===
+        "⏳ Koala myśli..."
+    ) {
+
+      last.remove();
+
+    }
+
+
+    const answer =
+      result.answer ||
+      result.message ||
+      "Nie otrzymałem odpowiedzi.";
+
+
+    addAIMessage(
+      answer,
+      "bot"
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "Koala.ai:",
+      error
+    );
+
+
+    const messages =
+      document.getElementById(
+        "aiMessages"
+      );
+
+
+    const last =
+      messages.lastElementChild;
+
+
+    if (
+      last &&
+      last.textContent ===
+        "⏳ Koala myśli..."
+    ) {
+
+      last.remove();
+
+    }
+
+
+    addAIMessage(
+
+      "❌ Nie udało się połączyć z Koala.ai.\n\n" +
+
+      "Sprawdź, czy Ollama, server.py i Cloudflare Tunnel są uruchomione.",
+
+      "bot"
+
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   ENTER / SHIFT + ENTER
+   ========================================================= */
+
+function handleAIKey(event) {
+
+  if (
+    event.key === "Enter" &&
+    !event.shiftKey
+  ) {
+
+    event.preventDefault();
+
+    askKoala();
+
+  }
+
+}
+
+
+/* =========================================================
+   START
+   ========================================================= */
+
+function start() {
+
+  const restored =
+    localStorage.getItem(
+      "koala_user"
+    );
+
+
+  if (restored) {
+
+    currentUser =
+      restored;
+
+    role =
+      "student";
+
+
+    document
+      .getElementById("loggedUser")
+      .textContent =
+      restored;
+
+
+    document
+      .getElementById("loginScreen")
+      .classList.add("hidden");
+
+
+    document
+      .getElementById("mainApp")
+      .classList.remove("hidden");
+
+  } else {
+
+    setTimeout(() => {
+
+      document
+        .getElementById(
+          "loginName"
+        )
+        ?.focus();
+
+    }, 100);
+
+  }
+
+}
+
+
+start();
+
+</script>
+
+</body>
+</html>
