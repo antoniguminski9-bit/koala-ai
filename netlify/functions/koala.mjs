@@ -48,10 +48,10 @@ Pytanie ucznia:
 ${pytanie}
 `;
 
-    const url =
-     "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent",
+  const url =
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent";
 
-    let result = null;
+let result = null;
 
     for (let proba = 1; proba <= 3; proba++) {
       try {
