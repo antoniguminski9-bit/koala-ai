@@ -3798,10 +3798,7 @@ function refreshChat() {
 script.src =
   GOOGLE_SHEETS_URL +
   separator +
-  "action=bootstrap" +
-  "&token=" +
-  encodeURIComponent(token || "") +
-  "&callback=" +
+  "callback=" +
   encodeURIComponent(callbackName);
   script.async = true;
   script.onerror = () => { if (!finished) { finished = true; clearTimeout(timer); cleanup(); } };
