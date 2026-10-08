@@ -48,9 +48,14 @@ Pytanie ucznia:
 ${pytanie}
 `;
 
-    const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
-      {
+    const url =
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent";
+
+    let response;
+    let result;
+
+    for (let proba = 1; proba <= 3; proba++) {
+      response = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -67,17 +72,29 @@ ${pytanie}
             }
           ]
         })
+      });
+
+      result = await response.json();
+
+      if (response.ok) {
+        break;
       }
-    );
 
-    const result = await response.json();
+      if (response.status === 503 && proba < 3) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, 1500 * proba)
+        );
+        continue;
+      }
 
-    if (!response.ok) {
       console.error(result);
 
       return new Response(
         JSON.stringify({
-          answer: "Gemini nie odpowiedział. Spróbuj ponownie."
+          answer:
+            response.status === 503
+              ? "🐨 Gemini jest chwilowo przeciążone. Spróbuj ponownie za chwilę."
+              : "Gemini nie odpowiedział. Spróbuj ponownie."
         }),
         {
           status: 500,
