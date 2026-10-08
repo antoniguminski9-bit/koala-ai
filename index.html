@@ -1539,143 +1539,272 @@ function togglePasswordVisibility() {
    ========================================================= */
 
 async function login() {
+  const nameInput = document.getElementById("loginName");
+  const passwordInput = document.getElementById("loginPassword");
+  const rememberMe = document.getElementById("rememberMe");
 
-  const nameInput =
-    document.getElementById("loginName");
-
-  const passwordInput =
-    document.getElementById("loginPassword");
-
-  const rememberMe =
-    document.getElementById("rememberMe");
-
-  const name =
-    nameInput.value.trim();
-
-  const password =
-    passwordInput.value;
+  const name = nameInput.value.trim();
+  const password = passwordInput.value;
 
   if (!name || !password) {
-
     setStatus(
       "loginStatus",
       "❌ Wpisz nazwę użytkownika i hasło.",
       true
     );
-
     return;
   }
 
-  if (!usersLoaded) {
+  if (!GOOGLE_SHEETS_URL) {
+    setStatus(
+      "loginStatus",
+      "❌ Brak połączenia z Google Sheets.",
+      true
+    );
+    return;
+  }
+
+  setStatus(
+    "loginStatus",
+    "⏳ Sprawdzam dane logowania..."
+  );
+
+  try {
+    const callbackName =
+      "koaleLogin_" +
+      Date.now() +
+      "_" +
+      Math.floor(Math.random() * 100000);
+
+    const script = document.createElement("script");
+
+    let finished = false;
+
+    const cleanup = () => {
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+
+      try {
+        delete window[callbackName];
+      } catch (error) {
+        window[callbackName] = undefined;
+      }
+    };
+
+    const finish = () => {
+      if (finished) return;
+
+      finished = true;
+      clearTimeout(timeout);
+      cleanup();
+    };
+
+    const timeout = setTimeout(() => {
+      if (finished) return;
+
+      setStatus(
+        "loginStatus",
+        "⚠️ Google Sheets nie odpowiedział.",
+        true
+      );
+
+      finish();
+    }, 10000);
+
+    window[callbackName] = async function(result) {
+      if (finished) return;
+
+      console.log("Apps Script login:", result);
+
+      if (!result || result.success !== true || !result.token) {
+        setStatus(
+          "loginStatus",
+          "❌ " +
+            (result?.error ||
+              "Nieprawidłowa nazwa użytkownika lub hasło."),
+          true
+        );
+
+        finish();
+        return;
+      }
+
+      const token = String(result.token);
+      const accountRole =
+        String(result.user?.role || "")
+          .trim()
+          .toLowerCase();
+
+      const accountName =
+        String(result.user?.name || name).trim();
+
+      if (
+        ![
+          "admin",
+          "nauczyciel",
+          "moderator",
+          "sadmin",
+          "student"
+        ].includes(accountRole)
+      ) {
+        setStatus(
+          "loginStatus",
+          "❌ To konto ma nieprawidłową rolę.",
+          true
+        );
+
+        finish();
+        return;
+      }
+
+      role = accountRole;
+
+      currentUser = {
+        role: accountRole,
+        name: accountName
+      };
+
+      if (isUserBanned(currentUser.name)) {
+        currentUser = null;
+        role = "guest";
+
+        setStatus(
+          "loginStatus",
+          "🚫 To konto jest zablokowane przez moderatora.",
+          true
+        );
+
+        finish();
+        return;
+      }
+
+      /*
+       * Zachowujemy token Apps Script.
+       * Jest potrzebny do późniejszego pobierania danych.
+       */
+      sessionStorage.setItem(
+        "koale_apps_script_token",
+        token
+      );
+
+      sessionStorage.setItem(
+        "koale_session",
+        JSON.stringify(currentUser)
+      );
+
+      if (rememberMe && rememberMe.checked) {
+        localStorage.setItem(
+          "koale_remembered_session",
+          JSON.stringify(currentUser)
+        );
+
+        localStorage.setItem(
+          "koale_apps_script_token",
+          token
+        );
+      } else {
+        localStorage.removeItem(
+          "koale_remembered_session"
+        );
+
+        localStorage.removeItem(
+          "koale_apps_script_token"
+        );
+      }
+
+      /*
+       * Teraz, kiedy mamy już prawidłową sesję,
+       * pobieramy dane z Google Sheets.
+       */
+      await syncFromSheets(token);
+
+      if (!usersLoaded) {
+        setStatus(
+          "loginStatus",
+          "⚠️ Zalogowano, ale nie udało się pobrać danych.",
+          true
+        );
+
+        finish();
+        return;
+      }
+
+      nameInput.value = "";
+      passwordInput.value = "";
+
+      if (rememberMe) {
+        rememberMe.checked = false;
+      }
+
+      document
+        .getElementById("loginScreen")
+        .classList.add("hidden");
+
+      updateAccess();
+
+      showPage(
+        "zadania",
+        document.getElementById("navZadania")
+      );
+
+      setSync(
+        accountRole === "sadmin"
+          ? "⭐ Zalogowano jako SuperAdministrator: " +
+              currentUser.name
+          : accountRole === "admin"
+          ? "👑 Zalogowano jako administrator: " +
+              currentUser.name
+          : accountRole === "moderator"
+          ? "🛡️ Zalogowano jako moderator: " +
+              currentUser.name
+          : "🎓 Zalogowano jako uczeń: " +
+              currentUser.name
+      );
+
+      finish();
+    };
+
+    const separator =
+      GOOGLE_SHEETS_URL.includes("?")
+        ? "&"
+        : "?";
+
+    const url =
+      GOOGLE_SHEETS_URL +
+      separator +
+      "action=login" +
+      "&name=" +
+      encodeURIComponent(name) +
+      "&password=" +
+      encodeURIComponent(password) +
+      "&callback=" +
+      encodeURIComponent(callbackName);
+
+    script.src = url;
+    script.async = true;
+
+    script.onerror = function() {
+      setStatus(
+        "loginStatus",
+        "⚠️ Nie udało się połączyć z Google Sheets.",
+        true
+      );
+
+      finish();
+    };
+
+    document.head.appendChild(script);
+
+  } catch (error) {
+    console.error("Błąd logowania:", error);
 
     setStatus(
       "loginStatus",
-      "⏳ Czekaj — trwa ładowanie kont z Google Sheets.",
+      "⚠️ Wystąpił błąd podczas logowania.",
       true
     );
-
-    await syncFromSheets();
-
-    if (!usersLoaded) {
-      return;
-    }
   }
-
-  const account =
-    users.find(user =>
-      String(user.name || "").trim().toLowerCase() ===
-        name.toLowerCase() &&
-      String(user.password || "") === password
-    );
-
-  if (!account) {
-
-    setStatus(
-      "loginStatus",
-      "❌ Nieprawidłowa nazwa użytkownika lub hasło.",
-      true
-    );
-
-    return;
-  }
-
-  const accountRole =
-    String(account.role || "").trim().toLowerCase();
-
-  if (
-    accountRole !== "admin" &&
-    accountRole !== "nauczyciel" &&
-    accountRole !== "moderator" &&
-    accountRole !== "sadmin" &&
-    accountRole !== "student"
-  ) {
-
-    setStatus(
-      "loginStatus",
-      "❌ To konto ma nieprawidłową rolę w Google Sheets.",
-      true
-    );
-
-    return;
-  }
-
-  role = accountRole;
-
-  currentUser = {
-    role: accountRole,
-    name: String(account.name || name).trim()
-  };
-
-  if (isUserBanned(currentUser.name)) {
-    currentUser = null; role = "guest";
-    setStatus("loginStatus", "🚫 To konto jest zablokowane przez moderatora.", true);
-    return;
-  }
-
-  /* Zwykłe logowanie przetrwa odświeżenie karty dzięki sessionStorage.
-     "Zapamiętaj mnie" dodatkowo zapisuje konto na urządzeniu
-     i pozostawia je zalogowane aż do ręcznego wylogowania. */
-  sessionStorage.setItem(
-    "koale_session",
-    JSON.stringify(currentUser)
-  );
-
-  if (rememberMe && rememberMe.checked) {
-    localStorage.setItem(
-      "koale_remembered_session",
-      JSON.stringify(currentUser)
-    );
-  } else {
-    localStorage.removeItem("koale_remembered_session");
-  }
-
-  nameInput.value = "";
-  passwordInput.value = "";
-  if (rememberMe) {
-    rememberMe.checked = false;
-  }
-
-  document
-    .getElementById("loginScreen")
-    .classList.add("hidden");
-
-  updateAccess();
-
-  showPage(
-    "zadania",
-    document.getElementById("navZadania")
-  );
-
-  setSync(
-    accountRole === "sadmin"
-      ? "⭐ Zalogowano jako SuperAdministrator: " + currentUser.name
-      : accountRole === "admin"
-      ? "👑 Zalogowano jako administrator: " + currentUser.name
-      : accountRole === "moderator"
-        ? "🛡️ Zalogowano jako moderator: " + currentUser.name
-        : "🎓 Zalogowano jako uczeń: " + currentUser.name
-  );
-
 }
 
 
@@ -2362,7 +2491,8 @@ function setSync(text, error = false) {
    GOOGLE SHEETS
    ========================================================= */
 
-function syncFromSheets() {
+
+      };function syncFromSheets() {
 
   return new Promise(resolve => {
 
@@ -2678,7 +2808,6 @@ function syncFromSheets() {
 
         finish();
 
-      };
 
 
     document.head.appendChild(script);
