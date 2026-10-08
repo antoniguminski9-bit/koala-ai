@@ -2778,13 +2778,14 @@ function syncFromSheets(token) {
         : "?";
 
 
-    const url =
-      GOOGLE_SHEETS_URL +
-      separator +
-      "callback=" +
-      encodeURIComponent(
-        callbackName
-      );
+ const url =
+  GOOGLE_SHEETS_URL +
+  separator +
+  "action=bootstrap" +
+  "&token=" +
+  encodeURIComponent(token || "") +
+  "&callback=" +
+  encodeURIComponent(callbackName);
 
 
     script.src = url;
