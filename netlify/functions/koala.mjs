@@ -51,66 +51,76 @@ ${pytanie}
     const url =
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent";
 
-    let response;
-    let result;
+    let result = null;
 
     for (let proba = 1; proba <= 3; proba++) {
-      response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiKey
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt
-                }
-              ]
-            }
-          ]
-        })
-      });
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: prompt
+                  }
+                ]
+              }
+            ]
+          })
+        });
 
-      result = await response.json();
+        result = await response.json();
 
-      if (response.ok) {
-        break;
-      }
+        if (response.ok) {
+          const answer =
+            result?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-      if (response.status === 503 && proba < 3) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, 1500 * proba)
-        );
-        continue;
-      }
+          if (answer) {
+            return new Response(
+              JSON.stringify({ answer }),
+              {
+                status: 200,
+                headers: { "Content-Type": "application/json" }
+              }
+            );
+          }
 
-      console.error(result);
-
-      return new Response(
-        JSON.stringify({
-          answer:
-            response.status === 503
-              ? "🐨 Gemini jest chwilowo przeciążone. Spróbuj ponownie za chwilę."
-              : "Gemini nie odpowiedział. Spróbuj ponownie."
-        }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" }
+          break;
         }
-      );
+
+        if (response.status !== 503) {
+          console.error(result);
+          break;
+        }
+
+        if (proba < 3) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, proba * 1000)
+          );
+        }
+      } catch (error) {
+        console.error(error);
+
+        if (proba < 3) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, proba * 1000)
+          );
+        }
+      }
     }
 
-    const answer =
-      result?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "Nie otrzymałem odpowiedzi od AI.";
-
     return new Response(
-      JSON.stringify({ answer }),
+      JSON.stringify({
+        answer:
+          "🐨 Gemini jest chwilowo przeciążone. Spróbuj ponownie za kilka sekund."
+      }),
       {
-        status: 200,
+        status: 503,
         headers: { "Content-Type": "application/json" }
       }
     );
