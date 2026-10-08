@@ -2492,7 +2492,7 @@ function setSync(text, error = false) {
    ========================================================= */
 
 
-function syncFromSheets() {
+function syncFromSheets(token) {
 
   return new Promise(resolve => {
 
@@ -3795,7 +3795,14 @@ function refreshChat() {
       renderChat();
     }
   };
-  script.src = GOOGLE_SHEETS_URL + separator + "callback=" + encodeURIComponent(callbackName);
+script.src =
+  GOOGLE_SHEETS_URL +
+  separator +
+  "action=bootstrap" +
+  "&token=" +
+  encodeURIComponent(token || "") +
+  "&callback=" +
+  encodeURIComponent(callbackName);
   script.async = true;
   script.onerror = () => { if (!finished) { finished = true; clearTimeout(timer); cleanup(); } };
   document.head.appendChild(script);
