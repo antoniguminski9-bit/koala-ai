@@ -4783,8 +4783,8 @@ async function askKoala() {
           },
 
          body: JSON.stringify({
-  message: question +
-    "\n\nINSTRUKCJA FORMATOWANIA: Jeśli zadanie matematyczne można rozwiązać pisemnie, pokaż rozwiązanie w słupku. Obsługuj dodawanie, odejmowanie, mnożenie i dzielenie. Cyfry muszą być wyrównane według wartości miejsc. Zapisz sam słupek między znacznikami [SLUPEK] i [/SLUPEK]. Poza słupkiem wyjaśnij krótko kolejne kroki. Nie używaj znaków LaTeX."
+message: question +
+  "\n\nINSTRUKCJA FORMATOWANIA: Jeśli zadanie matematyczne można rozwiązać pisemnie, pokaż rozwiązanie w słupku. Obsługuj dodawanie, odejmowanie, mnożenie i dzielenie. Cyfry muszą być wyrównane według wartości miejsc. ZAWSZE umieszczaj sam słupek między dokładnymi znacznikami [SLUPEK] i [/SLUPEK]. Nie pomijaj tych znaczników. Używaj spacji do wyrównania cyfr. Nie używaj LaTeX ani Markdown wewnątrz słupka. Poza słupkiem krótko wyjaśnij kolejne kroki."
 })
         }
       );
