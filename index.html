@@ -4657,38 +4657,32 @@ function handleAIKey(event) {
 }
 
 
-function addAIMessage(
-  text,
-  type
-) {
+function cleanKoalaText(text) {
+  return String(text)
+    .replace(/\\times\b/g, "×")
+    .replace(/\\cdot\b/g, "·")
+    .replace(/\\div\b/g, "÷")
+    .replace(/\\(?:left|right)\b/g, "")
+    .replace(/\\[()[\]]/g, "")
+    .replace(/\$/g, "")
+    .replace(/\*\*/g, "")
+    .replace(/(^|\n)\s*\*\s+/g, "$1• ")
+    .replace(/(?<!\*)\*(?!\*)/g, "")
+    .replace(/`{1,3}/g, "")
+    .replace(/[ \t]+/g, " ")
+    .trim();
+}
 
-  const messages =
-    document.getElementById(
-      "aiMessages"
-    );
+function addAIMessage(text, type) {
+  const messages = document.getElementById("aiMessages");
+  const message = document.createElement("div");
 
-
-  const message =
-    document.createElement(
-      "div"
-    );
-
-  message.className =
-    "ai-message " +
-    type;
-
+  message.className = "ai-message " + type;
   message.textContent =
-    text;
+    type === "bot" ? cleanKoalaText(text) : text;
 
-
-  messages.appendChild(
-    message
-  );
-
-
-  messages.scrollTop =
-    messages.scrollHeight;
-
+  messages.appendChild(message);
+  messages.scrollTop = messages.scrollHeight;
 }
 
 
