@@ -4678,13 +4678,34 @@ function addAIMessage(text, type) {
   const message = document.createElement("div");
 
   message.className = "ai-message " + type;
-  message.textContent =
-    type === "bot" ? cleanKoalaText(text) : text;
+
+  if (type !== "bot") {
+    message.textContent = text;
+  } else {
+    const parts = String(text).split(
+     /\[SLUPEK\]([\s\S]*?)\[\/SLUPEK\]/g
+    );
+
+    parts.forEach((part, index) => {
+      if (index % 2 === 1) {
+        const pre = document.createElement("pre");
+        pre.style.whiteSpace = "pre";
+        pre.style.overflowX = "auto";
+        pre.style.fontFamily = "monospace";
+        pre.style.maxWidth = "100%";
+        pre.textContent = part.trim();
+        message.appendChild(pre);
+      } else if (part.trim()) {
+        const section = document.createElement("div");
+        section.textContent = cleanKoalaText(part);
+        message.appendChild(section);
+      }
+    });
+  }
 
   messages.appendChild(message);
   messages.scrollTop = messages.scrollHeight;
 }
-
 
 async function askKoala() {
 
