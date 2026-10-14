@@ -4865,7 +4865,8 @@ koalaHistory.push(
   { role: "model", text: answer }
 );
 
-addAIMessage(answer, "bot");
+const cleanAnswer = answer.replace(/\*\*/g, "");
+addAIMessage(cleanAnswer, "bot");
 
 
   } catch (error) {
