@@ -87,17 +87,18 @@ let result = null;
 
     for (let proba = 1; proba <= 3; proba++) {
       try {
-        const response = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-goog-api-key": apiKey
-          },
-          body: JSON.stringify({
-  contents
-})
+const response = await fetch(url, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "x-goog-api-key": apiKey
+  },
+  body: JSON.stringify({
+    contents
+  })
+});
 
-        result = await response.json();
+result = await response.json();
 
         if (response.ok) {
           const answer =
