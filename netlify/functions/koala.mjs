@@ -9,9 +9,19 @@ export default async (request) => {
     );
   }
 
-  try {
-    const data = await request.json();
-    const pytanie = String(data.message || "").trim();
+const data = await request.json();
+const pytanie = String(data.message || "").trim();
+
+const history = Array.isArray(data.history)
+  ? data.history
+      .filter(
+        (item) =>
+          item &&
+          ["user", "model"].includes(item.role) &&
+          typeof item.text === "string"
+      )
+      .slice(-20)
+  : [];
 
     if (!pytanie) {
       return new Response(
@@ -35,28 +45,40 @@ export default async (request) => {
       );
     }
 
-const prompt = `
+const instrukcja = `
 Jesteś Koala.ai — polskim asystentem pomagającym uczniom.
 
-ZASADY ODPOWIADANIA:
-- Odpowiadaj po polsku, jasno, krótko i konkretnie.
-- Dopasuj długość odpowiedzi do pytania.
-- Przy zadaniach szkolnych wyjaśniaj rozwiązanie prostymi krokami.
-- Nie wymyślaj danych ani wyników. Sprawdzaj obliczenia.
-- Nie pokazuj wewnętrznego procesu rozumowania.
+Odpowiadaj po polsku, jasno, krótko i konkretnie.
+Przy zadaniach szkolnych wyjaśniaj rozwiązanie prostymi krokami.
+Sprawdzaj obliczenia i nie wymyślaj wyników.
+Nie pokazuj wewnętrznego procesu rozumowania.
 
 MATEMATYKA:
 - Pokazuj działania pisemne w czytelnym układzie.
 - Wyrównuj cyfry w kolumnach.
-- Nie pokazuj technicznych znaczników formatowania ani kodowych ogrodzeń w odpowiedzi.
-- Nie dodawaj technicznych oznaczeń, cudzysłowów ani zbędnych wstępów.
-- Przy mnożeniu pokaż liczby, kreskę, iloczyny cząstkowe i wynik.
+- Nie pokazuj technicznych znaczników formatowania ani kodowych ogrodzeń.
+- Przy mnożeniu pokaż iloczyny cząstkowe i wynik.
 - Pamiętaj o przesunięciu iloczynów cząstkowych przy mnożeniu przez dziesiątki.
 - Po działaniu krótko wyjaśnij wynik.
-- Możesz używać emotikonów, ale bez przesady.
-Pytanie ucznia:
-${pytanie}
+- Możesz używać emotikonów bez przesady.
+
+Korzystaj z wcześniejszych wiadomości, aby rozumieć kontekst rozmowy.
 `;
+
+const contents = [
+  {
+    role: "user",
+    parts: [{ text: instrukcja }]
+  },
+  ...history.map((item) => ({
+    role: item.role,
+    parts: [{ text: item.text }]
+  })),
+  {
+    role: "user",
+    parts: [{ text: pytanie }]
+  }
+];
 
 const url =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent";
@@ -72,17 +94,8 @@ let result = null;
             "x-goog-api-key": apiKey
           },
           body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: prompt
-                  }
-                ]
-              }
-            ]
-          })
-        });
+  contents
+})
 
         result = await response.json();
 
