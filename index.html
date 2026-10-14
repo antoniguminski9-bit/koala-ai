@@ -4804,23 +4804,20 @@ async function askKoala() {
     );
 
 
-    const response =
-      await fetch(
-        KOALA_API_URL,
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-         body: JSON.stringify({
-  message: question,
-  history: koalaHistory
-})
-        }
-      );
+   const response =
+  await fetch(
+    KOALA_API_URL,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        message: question,
+        history: koalaHistory
+      })
+    }
+  );
 
 
     if (!response.ok) {
