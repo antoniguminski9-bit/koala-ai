@@ -584,6 +584,7 @@ footer {
 .chat-message.moderator-message { background:linear-gradient(135deg,rgba(34,197,94,.24),rgba(22,163,74,.10)); border:1px solid rgba(74,222,128,.65); }
 .chat-message.sadmin-message { background:linear-gradient(135deg,rgba(250,204,21,.24),rgba(245,158,11,.10)); border:1px solid rgba(250,204,21,.65); }
 .chat-message.pinned-message { box-shadow:0 0 0 2px rgba(250,204,21,.35),0 10px 30px rgba(0,0,0,.18); }
+.chat-class-badge { display:inline-flex; align-items:center; gap:4px; margin-left:7px; padding:3px 9px; border-radius:999px; border:1px solid rgba(167,139,250,.65); background:linear-gradient(135deg,rgba(139,92,246,.28),rgba(59,130,246,.22)); color:#e9ddff; box-shadow:0 0 12px rgba(139,92,246,.14); font-size:10px; font-weight:900; letter-spacing:.02em; vertical-align:middle; white-space:nowrap; }
 .chat-role-badge { display:inline-flex; align-items:center; gap:5px; margin-left:7px; padding:3px 7px; border-radius:999px; font-size:10px; font-weight:900; vertical-align:middle; }
 .chat-role-badge.teacher { background:#2563eb; color:#fff; }
 .chat-role-badge.moderator { background:#16a34a; color:#fff; }
@@ -910,6 +911,16 @@ footer {
     <h1>zadania-koale</h1>
 
     <p>Wpisz nazwę użytkownika i hasło, aby wejść na stronę.</p>
+
+    <label for="loginClass" style="display:block;text-align:left;margin:0 0 6px;font-weight:700">🏫 Wybierz klasę</label>
+    <select id="loginClass" autocomplete="off" style="width:100%;box-sizing:border-box;padding:13px 14px;margin:0 0 12px;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:#172033;color:inherit;font:inherit">
+      <option value="4">Klasa 4</option>
+      <option value="5a">Klasa 5a</option>
+      <option value="5b">Klasa 5b</option>
+      <option value="6" selected>Klasa 6</option>
+      <option value="7">Klasa 7</option>
+      <option value="8">Klasa 8</option>
+    </select>
 
     <input
       type="text"
@@ -1729,7 +1740,10 @@ function renderMaintenanceState(active) {
   const currentRole = String(role || "").trim().toLowerCase();
   const isSadmin = currentRole === "sadmin";
   // Sadmin może nadal korzystać ze strony podczas globalnej przerwy.
-  const shouldBlockPage = !!active && !isSadmin;
+  // Przed zalogowaniem ekran przerwy nie może zasłaniać formularza logowania.
+  // Po zalogowaniu blokujemy tylko zwykłe konta; Sadmin zawsze może wejść i wyłączyć przerwę.
+  const isAuthenticated = currentRole !== "guest" && !!currentUser;
+  const shouldBlockPage = !!active && isAuthenticated && !isSadmin;
   if (screen) {
     screen.classList.toggle("visible", shouldBlockPage);
     screen.style.display = shouldBlockPage ? "flex" : "none";
@@ -1880,9 +1894,11 @@ async function login() {
   const nameInput = document.getElementById("loginName");
   const passwordInput = document.getElementById("loginPassword");
   const rememberMe = document.getElementById("rememberMe");
+  const classInput = document.getElementById("loginClass");
 
   const name = nameInput.value.trim();
   const password = passwordInput.value;
+  const selectedClass = String(classInput?.value || "6").trim();
 
   if (!name || !password) {
     setStatus(
@@ -2005,7 +2021,8 @@ async function login() {
 
       currentUser = {
         role: accountRole,
-        name: accountName
+        name: accountName,
+        class: String(result.user?.class || "").trim().toLowerCase()
       };
 
       if (isUserBanned(currentUser.name)) {
@@ -2105,6 +2122,8 @@ async function login() {
               currentUser.name
       );
 
+      // Po udanym logowaniu natychmiast przelicz uprawnienia do ekranu przerwy.
+      pollMaintenanceState();
       finish();
     };
 
@@ -2121,6 +2140,8 @@ async function login() {
       encodeURIComponent(name) +
       "&password=" +
       encodeURIComponent(password) +
+      "&class=" +
+      encodeURIComponent(selectedClass) +
       "&callback=" +
       encodeURIComponent(callbackName);
 
@@ -2190,7 +2211,8 @@ function restoreRememberedSession() {
     role = String(account.role).trim().toLowerCase();
     currentUser = {
       role,
-      name: String(account.name).trim()
+      name: String(account.name).trim(),
+      class: String(session.class || account.class || "6").trim()
     };
 
     /* Odświeżamy sesję również po zwykłym logowaniu. */
@@ -3293,6 +3315,7 @@ function syncFromSheets(token) {
                 user: String(row.user || row.sender || row.username || row.name || row.title || "Użytkownik").trim(),
                 content: String(row.content || ""),
                 date: String(row.date || ""),
+                class: String(row.class || "").trim(),
                 pinned: String(row.pinned || "").toLowerCase() === "true"
               });
               return;
@@ -4359,6 +4382,13 @@ function renderChat() {
       const summary = document.createElement('span');
       summary.textContent = (message.user || 'Użytkownik') + ': ' + (message.content || '');
       item.appendChild(summary);
+      const pinnedClass = String(message.class || message.className || message.klasa || '').trim();
+      if (pinnedClass) {
+        const pinnedBadge = document.createElement('span');
+        pinnedBadge.className = 'chat-class-badge';
+        pinnedBadge.textContent = '🎓 KL. ' + pinnedClass.toUpperCase();
+        item.appendChild(pinnedBadge);
+      }
       if (canModerate) {
         const unpin = document.createElement('button');
         unpin.className = 'chat-pin unpin';
@@ -4385,7 +4415,16 @@ function renderChat() {
     el.className = 'chat-message' + (currentUser && message.user === currentUser.name ? ' mine' : '') + (authorRole === 'nauczyciel' ? ' teacher-message' : '') + (authorRole === 'moderator' ? ' moderator-message' : '') + (authorRole === 'sadmin' ? ' sadmin-message' : '') + (pinned ? ' pinned-message' : '');
     const meta = document.createElement('div');
     meta.className = 'chat-meta';
-    meta.textContent = (pinned ? '📌 ' : '') + (message.user || 'Użytkownik') + (message.date ? ' • ' + formatChatDate(message.date) : '');
+    if (pinned) meta.appendChild(document.createTextNode('📌 '));
+    meta.appendChild(document.createTextNode(message.user || 'Użytkownik'));
+    const messageClass = String(message.class || message.className || message.klasa || '').trim();
+    if (messageClass) {
+      const classBadge = document.createElement('span');
+      classBadge.className = 'chat-class-badge';
+      classBadge.textContent = '🎓 KL. ' + messageClass.toUpperCase();
+      meta.appendChild(classBadge);
+    }
+    if (message.date) meta.appendChild(document.createTextNode(' • ' + formatChatDate(message.date)));
     if(authorRole === 'nauczyciel' || authorRole === 'moderator' || authorRole === 'sadmin') {
       const badge = document.createElement('span');
       badge.className = 'chat-role-badge ' + (authorRole === 'sadmin' ? 'sadmin' : authorRole === 'moderator' ? 'moderator' : 'teacher');
@@ -4434,6 +4473,7 @@ async function sendChatMessage() {
     id: String(Date.now()) + "_" + Math.floor(Math.random() * 10000),
     user: String(currentUser.name).trim(),
     sender: String(currentUser.name).trim(),
+    class: String(currentUser.class || "6").trim(),
     content,
     date: new Date().toISOString()
   };
@@ -4451,6 +4491,8 @@ async function sendChatMessage() {
     sender: item.user,
     content: item.content,
     title: item.user,
+    class: item.class,
+    role: currentUser.role,
     image: "",
     date: item.date
   });
@@ -5033,6 +5075,7 @@ async function start() {
 
   renderAll();
   startChatRefresh();
+  pollMaintenanceState();
 
   if (!restored) {
     setSync("🔐 Zaloguj się, aby pobrać dane z Google Sheets.");
