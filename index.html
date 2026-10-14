@@ -4739,7 +4739,7 @@ function addAIMessage(
 
 }
 
-
+let koalaHistory = [];
 async function askKoala() {
 
   if (role === "guest" || role === "nauczyciel") {
@@ -4815,9 +4815,10 @@ async function askKoala() {
               "application/json"
           },
 
-          body: JSON.stringify({
-            message: question
-          })
+         body: JSON.stringify({
+  message: question,
+  history: koalaHistory
+})
         }
       );
 
@@ -4857,12 +4858,17 @@ async function askKoala() {
     }
 
 
-    addAIMessage(
-      result.answer ||
-      result.message ||
-      "Nie otrzymałem odpowiedzi.",
-      "bot"
-    );
+   const answer =
+  result.answer ||
+  result.message ||
+  "Nie otrzymałem odpowiedzi.";
+
+koalaHistory.push(
+  { role: "user", text: question },
+  { role: "model", text: answer }
+);
+
+addAIMessage(answer, "bot");
 
 
   } catch (error) {
