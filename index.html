@@ -1572,18 +1572,50 @@ footer {
       ></textarea>
 
       <button
-        class="button ai-send"
-        onclick="askKoala()"
-      >
-        Wyślij 🐨
-      </button>
+<div class="ai-input-area">
 
-    </div>
+  <input
+    id="aiImageInput"
+    type="file"
+    accept="image/*"
+    hidden
+    onchange="handleKoalaImage(event)"
+  >
 
-  </div>
+<div class="ai-input-area">
 
-</section>
+  <input
+    id="aiImageInput"
+    type="file"
+    accept="image/*"
+    hidden
+    onchange="handleKoalaImage(event)"
+  >
 
+  <button
+    type="button"
+    class="button"
+    onclick="document.getElementById('aiImageInput').click()"
+  >
+    📷 Zdjęcie
+  </button>
+
+  <span id="aiImageName"></span>
+
+  <textarea
+    id="aiInput"
+    placeholder="Np. Wyjaśnij mi równania kwadratowe..."
+    onkeydown="handleAIKey(event)"
+  ></textarea>
+
+  <button
+    class="button ai-send"
+    onclick="askKoala()"
+  >
+    Wyślij 🐨
+  </button>
+
+</div>
 <!-- ============================= -->
 <!-- GRY -->
 <!-- ============================= -->
@@ -4740,6 +4772,50 @@ function addAIMessage(
 }
 
 let koalaHistory = [];
+ let koalaSelectedImage = null;
+
+function handleKoalaImage(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  if (!file.type.startsWith("image/")) {
+    alert("Wybierz plik graficzny.");
+    event.target.value = "";
+    return;
+  }
+
+  if (file.size > 8 * 1024 * 1024) {
+    alert("Zdjęcie może mieć maksymalnie 8 MB.");
+    event.target.value = "";
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    const dataUrl = String(reader.result || "");
+    const comma = dataUrl.indexOf(",");
+
+    if (comma < 0) {
+      alert("Nie udało się odczytać zdjęcia.");
+      return;
+    }
+
+    koalaSelectedImage = {
+      mimeType: file.type,
+      data: dataUrl.slice(comma + 1)
+    };
+
+    const name = document.getElementById("aiImageName");
+    if (name) name.textContent = "📷 " + file.name;
+  };
+
+  reader.onerror = () => {
+    alert("Nie udało się odczytać zdjęcia.");
+  };
+
+  reader.readAsDataURL(file);
+} 
 async function askKoala() {
 
   if (role === "guest" || role === "nauczyciel") {
@@ -4759,19 +4835,17 @@ async function askKoala() {
     );
 
 
-  const question =
-    input.value.trim();
+const question =
+  input.value.trim();
 
+if (!question && !koalaSelectedImage) {
+  return;
+}
 
-  if (!question) {
-    return;
-  }
-
-
-  addAIMessage(
-    question,
-    "user"
-  );
+addAIMessage(
+  question || "📷 Wysyłam zdjęcie",
+  "user"
+);
 
 
   input.value = "";
@@ -4804,7 +4878,9 @@ async function askKoala() {
     );
 
 
-   const response =
+ const imageToSend = koalaSelectedImage;
+
+const response =
   await fetch(
     KOALA_API_URL,
     {
@@ -4814,7 +4890,8 @@ async function askKoala() {
       },
       body: JSON.stringify({
         message: question,
-        history: koalaHistory
+        history: koalaHistory,
+        ...(imageToSend ? { image: imageToSend } : {})
       })
     }
   );
