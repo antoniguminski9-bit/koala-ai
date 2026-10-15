@@ -24,9 +24,13 @@ export default async (request) => {
           .slice(-20)
       : [];
 
-    if (!pytanie) {
+    const image = data.image || null;
+
+    if (!pytanie && !image) {
       return new Response(
-        JSON.stringify({ answer: "Napisz najpierw pytanie." }),
+        JSON.stringify({
+          answer: "Napisz pytanie albo dołącz zdjęcie. 🐨"
+        }),
         {
           status: 400,
           headers: { "Content-Type": "application/json" }
@@ -47,22 +51,36 @@ export default async (request) => {
     }
 
     const instrukcja = `
-Jesteś Koala.ai — polskim asystentem pomagającym uczniom.
+Jesteś Koala.ai — polskim asystentem pomagającym uczniom i odpowiadającym na pytania z różnych dziedzin.
 
-Odpowiadaj po polsku, jasno, krótko i konkretnie.
-Dopasuj długość odpowiedzi do pytania.
-Przy zadaniach szkolnych wyjaśniaj rozwiązanie prostymi krokami.
-Sprawdzaj obliczenia i nie wymyślaj wyników.
-Nie pokazuj wewnętrznego procesu rozumowania.
+ZASADY OGÓLNE:
+- Odpowiadaj po polsku, jasno, naturalnie i konkretnie.
+- Dopasuj długość odpowiedzi do pytania.
+- Pomagaj w matematyce, fizyce, chemii, biologii, historii, geografii, językach, informatyce i innych dziedzinach.
+- Przy zadaniach szkolnych wyjaśniaj rozwiązanie krok po kroku, prostym językiem.
+- Sprawdzaj obliczenia i nie wymyślaj faktów.
+- Jeśli nie masz pewności, powiedz o tym.
+- Jeśli pytanie jest niejasne, poproś o doprecyzowanie.
+- Korzystaj z historii rozmowy, aby rozumieć kontekst.
+- Nie pokazuj wewnętrznego procesu rozumowania.
+
+ZDJĘCIA:
+- Jeśli użytkownik prześle zdjęcie, dokładnie przeanalizuj jego widoczną treść.
+- Odczytaj zadanie, tekst, liczby, wykresy lub schematy, jeśli są czytelne.
+- Pomóż rozwiązać zadanie i wyjaśnij najważniejsze kroki.
+- Nie zgaduj nieczytelnych fragmentów. Powiedz, jeśli zdjęcie jest niewyraźne.
 
 MATEMATYKA:
 - Pokazuj działania pisemne w czytelnym układzie.
-- Wyrównuj cyfry w kolumnach.
-- Nie pokazuj technicznych znaczników formatowania ani kodowych ogrodzeń.
+- Wyrównuj cyfry w kolumnach, gdy format na to pozwala.
 - Przy mnożeniu pokaż iloczyny cząstkowe i wynik.
 - Pamiętaj o przesunięciu iloczynów cząstkowych przy mnożeniu przez dziesiątki.
-- Po działaniu krótko wyjaśnij wynik.
-- Możesz używać emotikonów bez przesady.
+- Po obliczeniu krótko wyjaśnij wynik.
+
+FORMAT:
+- Nie wypisuj dosłownie znaczników formatowania, takich jak **.
+- Unikaj zbędnych wstępów i technicznych oznaczeń.
+- Możesz używać emotikonów, ale bez przesady.
 `;
 
     const contents = [
@@ -72,12 +90,24 @@ MATEMATYKA:
       })),
       {
         role: "user",
-        parts: [{ text: pytanie }]
+        parts: [
+          ...(pytanie ? [{ text: pytanie }] : [
+            { text: "Proszę przeanalizuj dołączone zdjęcie." }
+          ]),
+          ...(image
+            ? [{
+                inline_data: {
+                  mime_type: image.mimeType,
+                  data: image.data
+                }
+              }]
+            : [])
+        ]
       }
     ];
 
     const url =
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent";
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
     let result = null;
 
