@@ -1,17 +1,17 @@
 export default async (request) => {
+  const headers = { "Content-Type": "application/json" };
+
+  const json = (answer, status = 200) =>
+    new Response(JSON.stringify({ answer }), { status, headers });
+
   if (request.method !== "POST") {
-    return new Response(
-      JSON.stringify({ answer: "Dozwolone jest tylko POST." }),
-      {
-        status: 405,
-        headers: { "Content-Type": "application/json" }
-      }
-    );
+    return json("Dozwolone jest tylko POST.", 405);
   }
 
   try {
     const data = await request.json();
     const pytanie = String(data.message || "").trim();
+    const image = data.image || null;
 
     const history = Array.isArray(data.history)
       ? data.history
@@ -24,63 +24,37 @@ export default async (request) => {
           .slice(-20)
       : [];
 
-    const image = data.image || null;
-
     if (!pytanie && !image) {
-      return new Response(
-        JSON.stringify({
-          answer: "Napisz pytanie albo dołącz zdjęcie. 🐨"
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" }
-        }
-      );
+      return json("Napisz pytanie albo dołącz zdjęcie. 🐨", 400);
+    }
+
+    if (
+      image &&
+      (!String(image.mimeType || "").startsWith("image/") ||
+        typeof image.data !== "string")
+    ) {
+      return json("Nie udało się odczytać zdjęcia. Wybierz je ponownie.", 400);
     }
 
     const apiKey = Netlify.env.get("GEMINI_API_KEY");
 
     if (!apiKey) {
-      return new Response(
-        JSON.stringify({ answer: "Brak konfiguracji klucza AI." }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json" }
-        }
-      );
+      console.error("Brak zmiennej GEMINI_API_KEY w Netlify.");
+      return json("Brak konfiguracji klucza AI w Netlify.", 500);
     }
 
     const instrukcja = `
-Jesteś Koala.ai — polskim asystentem pomagającym uczniom i odpowiadającym na pytania z różnych dziedzin.
-
-ZASADY OGÓLNE:
-- Odpowiadaj po polsku, jasno, naturalnie i konkretnie.
-- Dopasuj długość odpowiedzi do pytania.
-- Pomagaj w matematyce, fizyce, chemii, biologii, historii, geografii, językach, informatyce i innych dziedzinach.
-- Przy zadaniach szkolnych wyjaśniaj rozwiązanie krok po kroku, prostym językiem.
-- Sprawdzaj obliczenia i nie wymyślaj faktów.
-- Jeśli nie masz pewności, powiedz o tym.
-- Jeśli pytanie jest niejasne, poproś o doprecyzowanie.
-- Korzystaj z historii rozmowy, aby rozumieć kontekst.
-- Nie pokazuj wewnętrznego procesu rozumowania.
-
-ZDJĘCIA:
-- Jeśli użytkownik prześle zdjęcie, dokładnie przeanalizuj jego widoczną treść.
-- Odczytaj zadanie, tekst, liczby, wykresy lub schematy, jeśli są czytelne.
-- Pomóż rozwiązać zadanie i wyjaśnij najważniejsze kroki.
-- Nie zgaduj nieczytelnych fragmentów. Powiedz, jeśli zdjęcie jest niewyraźne.
-
-MATEMATYKA:
-- Pokazuj działania pisemne w czytelnym układzie.
-- Wyrównuj cyfry w kolumnach, gdy format na to pozwala.
-- Przy mnożeniu pokaż iloczyny cząstkowe i wynik.
-- Pamiętaj o przesunięciu iloczynów cząstkowych przy mnożeniu przez dziesiątki.
-- Po obliczeniu krótko wyjaśnij wynik.
-
-FORMAT:
-- Nie wypisuj dosłownie znaczników formatowania, takich jak **.
-- Unikaj zbędnych wstępów i technicznych oznaczeń.
-- Możesz używać emotikonów, ale bez przesady.
+Jesteś Koala.ai — polskim asystentem dla uczniów.
+Odpowiadaj po polsku, jasno, naturalnie i konkretnie.
+W zadaniach szkolnych wyjaśniaj rozwiązanie krok po kroku.
+Sprawdzaj obliczenia i nie wymyślaj faktów.
+Jeśli czegoś nie wiesz, powiedz o tym.
+Korzystaj z historii rozmowy.
+Nie pokazuj wewnętrznego procesu rozumowania.
+Jeśli otrzymasz zdjęcie, przeanalizuj jego treść.
+Nie zgaduj nieczytelnych fragmentów.
+Przy mnożeniu pisemnym pokazuj czytelne działania i iloczyny cząstkowe.
+Nie wypisuj dosłownie znaczników formatowania, takich jak **.
 `;
 
     const contents = [
@@ -91,9 +65,9 @@ FORMAT:
       {
         role: "user",
         parts: [
-          ...(pytanie ? [{ text: pytanie }] : [
-            { text: "Proszę przeanalizuj dołączone zdjęcie." }
-          ]),
+          {
+            text: pytanie || "Przeanalizuj załączone zdjęcie i pomóż mi."
+          },
           ...(image
             ? [{
                 inline_data: {
@@ -106,93 +80,96 @@ FORMAT:
       }
     ];
 
-    const url =
-     "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent";
+    // Jeśli model jest niedostępny lub przeciążony,
+    // spróbuj kolejnego modelu.
+    const modele = [
+      "gemini-3.8-flash",
+      "gemini-3.7-flash",
+      "gemini-3.6-flash",
+      "gemini-3.5-flash-lite"
+    ];
 
-    let result = null;
+    let ostatniBlad = "";
 
-    for (let proba = 1; proba <= 3; proba++) {
+    for (const model of modele) {
       try {
-        const response = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-goog-api-key": apiKey
-          },
-          body: JSON.stringify({
-            systemInstruction: {
-              parts: [{ text: instrukcja }]
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-goog-api-key": apiKey
             },
-            contents
-          })
-        });
+            body: JSON.stringify({
+              systemInstruction: {
+                parts: [{ text: instrukcja }]
+              },
+              contents,
+              generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 2048
+              }
+            })
+          }
+        );
 
-        result = await response.json();
+        const result = await response.json().catch(() => ({}));
 
         if (response.ok) {
-          const answer =
-            result?.candidates?.[0]?.content?.parts
-              ?.map((part) => part.text || "")
-              .join("")
-              .trim();
+          const answer = result?.candidates?.[0]?.content?.parts
+            ?.map((part) => part.text || "")
+            .join("")
+            .trim();
 
           if (answer) {
-            return new Response(
-              JSON.stringify({ answer }),
-              {
-                status: 200,
-                headers: { "Content-Type": "application/json" }
-              }
-            );
+            return json(answer);
           }
 
-          console.error("Gemini nie zwróciło tekstowej odpowiedzi:", result);
-          break;
+          ostatniBlad =
+            result?.promptFeedback?.blockReason ||
+            result?.candidates?.[0]?.finishReason ||
+            "Model nie zwrócił tekstowej odpowiedzi.";
+
+          console.error(`Gemini ${model}: brak odpowiedzi tekstowej.`);
+          continue;
         }
 
-        console.error("Błąd Gemini:", response.status, result);
+        const szczegoly =
+          result?.error?.message || `HTTP ${response.status}`;
 
-        if (response.status !== 503) {
-          break;
+        ostatniBlad = szczegoly;
+
+        console.error(`Gemini ${model}: HTTP ${response.status}`, szczegoly);
+
+        // Dla tych błędów spróbuj następnego modelu.
+        if ([400, 401, 403, 404, 429, 500, 503].includes(response.status)) {
+          continue;
         }
 
-        if (proba < 3) {
-          await new Promise((resolve) =>
-            setTimeout(resolve, proba * 1000)
-          );
-        }
+        break;
       } catch (error) {
-        console.error(error);
-
-        if (proba < 3) {
-          await new Promise((resolve) =>
-            setTimeout(resolve, proba * 1000)
-          );
-        }
+        ostatniBlad = error?.message || "Błąd połączenia";
+        console.error(`Błąd połączenia z Gemini ${model}:`, ostatniBlad);
       }
     }
 
-    return new Response(
-      JSON.stringify({
-        answer:
-          "🐨 Nie udało mi się uzyskać odpowiedzi. Spróbuj ponownie za chwilę."
-      }),
-      {
-        status: 503,
-        headers: { "Content-Type": "application/json" }
-      }
+    console.error("Wszystkie modele Gemini zawiodły:", ostatniBlad);
+
+    if (/API key|API_KEY|invalid key/i.test(ostatniBlad)) {
+      return json("Klucz API Gemini jest nieprawidłowy. Sprawdź konfigurację w Netlify.", 502);
+    }
+
+    if (/quota|billing|resource_exhausted/i.test(ostatniBlad)) {
+      return json("Limit zapytań Gemini został osiągnięty. Sprawdź limity API.", 503);
+    }
+
+    return json(
+      "🐨 Nie udało mi się uzyskać odpowiedzi z Gemini. Spróbuj ponownie za chwilę. Jeśli problem się powtarza, sprawdź logi funkcji koala w Netlify.",
+      503
     );
   } catch (error) {
-    console.error(error);
-
-    return new Response(
-      JSON.stringify({
-        answer: "Wystąpił błąd podczas łączenia z AI."
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" }
-      }
-    );
+    console.error("Błąd funkcji Koala.ai:", error);
+    return json("Wystąpił błąd podczas obsługi wiadomości.", 500);
   }
 };
