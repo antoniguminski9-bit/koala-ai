@@ -4829,10 +4829,17 @@ async function askKoala() {
   }
 
 
-  const input =
-    document.getElementById(
-      "aiInput"
-    );
+ const inputs = [...document.querySelectorAll("#aiInput")];
+
+const input = inputs.find(el =>
+  el.offsetWidth > 0 &&
+  el.offsetHeight > 0
+);
+
+if (!input) {
+  addAIMessage("❌ Nie znaleziono widocznego pola wpisywania.", "bot");
+  return;
+}
 
 
 const question =
