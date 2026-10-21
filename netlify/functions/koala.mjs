@@ -82,13 +82,7 @@ Nie wypisuj dosłownie znaczników formatowania, takich jak **.
 
     // Jeśli model jest niedostępny lub przeciążony,
     // spróbuj kolejnego modelu.
-    const modele = [
-      "gemini-3.8-flash",
-      "gemini-3.7-flash",
-      "gemini-3.6-flash",
-      "gemini-3.5-flash-lite"
-    ];
-
+  const modele = ["gemini-3.8-flash"];
     let ostatniBlad = "";
 
     for (const model of modele) {
