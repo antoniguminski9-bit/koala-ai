@@ -218,7 +218,7 @@ function findKnowledge(question) {
 function getIntent(question) {
   const text = normalize(question);
 
-  if (/\b(przyklad|przyklady|podaj przyklad|daj przyklad)\b/.test(text)) {
+  if (/\b(przyklad\w*|przyklady|podaj przyklad|daj przyklad)\b/.test(text)) {
     return "example";
   }
 
@@ -226,7 +226,7 @@ function getIntent(question) {
     return "simple";
   }
 
-  if (/\b(notatka|podsumuj|podsumowanie|skroc|najwazniejsze)\b/.test(text)) {
+  if (/\b(notatk\w*|podsumuj\w*|podsumowani\w*|skroc\w*|najwazniejsz\w*)\b/.test(text)) {
     return "summary";
   }
 
@@ -234,7 +234,7 @@ function getIntent(question) {
     return "why";
   }
 
-  if (/\b(rozwin|rozszerz|dokladniej|wiecej|opowiedz wiecej|szerzej)\b/.test(text)) {
+  if (/\b(rozwin\w*|rozszerz\w*|dokladniej|wiecej|opowiedz wiecej|szerzej)\b/.test(text)) {
     return "expand";
   }
 
@@ -244,7 +244,10 @@ function getIntent(question) {
 function isFollowUp(question) {
   const text = normalize(question);
 
-  return /^(a )?(dlaczego|czemu|jak to|rozwin|rozwin to|rozwin mi to|dokladniej|wiecej|przyklad|podaj przyklad|daj przyklad|prosciej|latwiej|notatka|podsumuj|nie rozumiem)( .*)?$/.test(text);
+  return (
+    /^(a\s+)?(dlaczego|czemu|jak to|rozwin|rozwin to|rozwin mi to|dokladniej|wiecej|przyklad|podaj przyklad|daj przyklad|prosciej|latwiej|nie rozumiem)( .*)?$/.test(text) ||
+    /\b(notatk\w*|podsumuj\w*)\b/.test(text)
+  );
 }
 
 function formatKnowledge(item, intent = "normal") {
@@ -424,22 +427,23 @@ function formatNumber(value) {
   }).format(value);
 }
 
-function getPreviousQuestion(history) {
-  if (!Array.isArray(history)) return "";
+function getPreviousTopic(history) {
+  if (!Array.isArray(history)) return null;
 
   for (let i = history.length - 1; i >= 0; i--) {
-    if (
-      history[i] &&
-      history[i].role === "user" &&
-      typeof history[i].text === "string"
-    ) {
-      return history[i].text;
+    const item = history[i];
+
+    if (item && item.role === "user" && typeof item.text === "string") {
+      const topic = findKnowledge(item.text);
+
+      if (topic) {
+        return topic;
+      }
     }
   }
 
-  return "";
+  return null;
 }
-
 function getPreviousAnswer(history) {
   if (!Array.isArray(history)) return "";
 
@@ -494,9 +498,8 @@ export function answerQuestion(question, history = []) {
 
   // Potem sprawdź, czy użytkownik nawiązuje do wcześniejszej wiadomości.
   if (isFollowUp(original)) {
-    const previousQuestion = getPreviousQuestion(history);
-    const previousAnswer = getPreviousAnswer(history);
-    const previousTopic = findKnowledge(previousQuestion);
+const previousTopic = getPreviousTopic(history);
+const previousAnswer = getPreviousAnswer(history);
 
     if (previousTopic) {
       return formatKnowledge(previousTopic, intent === "normal" ? "expand" : intent);
