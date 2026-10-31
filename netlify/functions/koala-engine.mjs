@@ -241,13 +241,25 @@ function getIntent(question) {
   return "normal";
 }
 
+
 function isFollowUp(question) {
   const text = normalize(question);
 
   return (
-    /^(a\s+)?(dlaczego|czemu|jak to|rozwin|rozwin to|rozwin mi to|dokladniej|wiecej|przyklad|podaj przyklad|daj przyklad|prosciej|latwiej|nie rozumiem)( .*)?$/.test(text) ||
-    /\b(notatk\w*|podsumuj\w*)\b/.test(text)
+    /^(a\s+)?(dlaczego|czemu|jak to|rozwin\w*|rozszerz\w*|dokladniej|wiecej|przyklad|podaj przyklad|daj przyklad|prosciej|wytlumacz prosciej|wyjasnij prosciej|latwiej|nie rozumiem)( .*)?$/.test(text) ||
+    /\b(notatk\w*|podsumuj\w*|podsumowani\w*)\b/.test(text)
   );
+}
+function isTopicChange(question) {
+  const text = normalize(question);
+
+  return /\b(zmienmy temat|zmien temat|zmieniamy temat|przejdzmy do|teraz matm\w*|teraz matematy\w*)\b/.test(text);
+}
+
+function formatNumber(value) {
+  return new Intl.NumberFormat("pl-PL", {
+    maximumFractionDigits: 8
+  }).format(value);
 }
 
 function formatKnowledge(item, intent = "normal") {
@@ -276,7 +288,42 @@ function formatKnowledge(item, intent = "normal") {
   return `🐨 ${item.title}\n\n${item.short}\n\nWyjaśnienie:\n${item.explanation}\n\nPrzykład:\n${item.example}`;
 }
 
-/* Kalkulator z bezpiecznym parserem, bez eval(). */
+function getPreviousTopic(history) {
+  if (!Array.isArray(history)) return null;
+
+  for (let i = history.length - 1; i >= 0; i--) {
+    const item = history[i];
+
+    if (!item || item.role !== "user") continue;
+
+    if (isTopicChange(item.text)) return null;
+
+    if (typeof item.text === "string") {
+      const topic = findKnowledge(item.text);
+      if (topic) return topic;
+    }
+  }
+
+  return null;
+}
+
+function getPreviousAnswer(history) {
+  if (!Array.isArray(history)) return "";
+
+  for (let i = history.length - 1; i >= 0; i--) {
+    const item = history[i];
+
+    if (
+      item &&
+      item.role === "model" &&
+      typeof item.text === "string"
+    ) {
+      return item.text;
+    }
+  }
+
+  return "";
+}
 
 function calculate(text) {
   let expression = String(text || "")
@@ -288,12 +335,11 @@ function calculate(text) {
 
   expression = expression
     .replace(/^(ile to(?: jest)?|ile jest|oblicz|policz(?: mi)?|wynik)\s+/, "")
-    .replace(/[!?;:]+$/g, "")
+    .replace(/[?!]+$/g, "")
     .trim();
 
   if (!expression || expression.length > 120) return null;
 
-  // Procenty
   const percent = expression.match(
     /^(-?\d+(?:[.,]\d+)?)\s*(?:%|procent(?:y|ow|a)?)\s*(?:z\s*)?(-?\d+(?:[.,]\d+)?)$/
   );
@@ -308,18 +354,16 @@ function calculate(text) {
     return `Wynik: ${formatNumber(result)}.\n\nObliczenie: ${a}% × ${b} = ${formatNumber(result)}.`;
   }
 
-  // Zamiana polskich poleceń na operatory
   expression = expression
     .replace(/\b(pomnozone przez|mnozone przez|razy)\b/g, "*")
     .replace(/\b(plus|dodac)\b/g, "+")
     .replace(/\b(minus|odjac)\b/g, "-")
-    .replace(/\b(podzielone przez|dzielone przez|podzielic przez|podziel przez|na)\b/g, "/")
+    .replace(/\b(podzielone przez|dzielone przez|podzielic przez|podziel przez)\b/g, "/")
     .replace(/\b(do potegi|podniesione do potegi)\b/g, "^")
-    .replace(/(\d)\s*x\s*(?=\d)/g, "$1 * ")
-    .replace(/,/g, ".");
+    .replace(/(\d)\s*x\s*(?=\d)/g, "$1 * ");
 
   const tokens = [];
-  const pattern = /\s*(\d+(?:\.\d+)?|[()+\-*/×÷^])\s*/gy;
+  const pattern = /\s*(\d+(?:[.,]\d+)?|[()+\-*/×÷^])\s*/gy;
   let position = 0;
 
   while (position < expression.length) {
@@ -353,10 +397,10 @@ function calculate(text) {
 
     if (/^\d/.test(token || "")) {
       index++;
-      return Number(token);
+      return Number(token.replace(",", "."));
     }
 
-    throw new Error("Nieprawidłowa wartość");
+    throw new Error("Wartość");
   }
 
   function unary() {
@@ -381,7 +425,7 @@ function calculate(text) {
       const right = power();
 
       if (Math.abs(right) > 10) {
-        throw new Error("Za duża potęga");
+        throw new Error("Potęga");
       }
 
       return Math.pow(left, right);
@@ -441,61 +485,6 @@ function calculate(text) {
   }
 }
 
-function formatNumber(value) {
-  return new Intl.NumberFormat("pl-PL", {
-    maximumFractionDigits: 8
-  }).format(value);
-}
-function isTopicChange(question) {
-  const text = normalize(question);
-
-  return /\b(zmienmy temat|zmien temat|zmieniamy temat|przejdzmy do|teraz matm\w*|teraz matematy\w*)\b/.test(text);
-}
-function getPreviousTopic(history) {
-  if (!Array.isArray(history)) return null;
-
-  for (let i = history.length - 1; i >= 0; i--) {
-    const item = history[i];
-
-    if (!item || item.role !== "user") continue;
-
-    if (isTopicChange(item.text)) {
-      return null;
-    }
-
-    if (typeof item.text === "string") {
-      const topic = findKnowledge(item.text);
-
-      if (topic) return topic;
-    }
-  }
-
-  return null;
-}
-function getPreviousAnswer(history) {
-  if (!Array.isArray(history)) return "";
-
-  for (let i = history.length - 1; i >= 0; i--) {
-    if (
-      history[i] &&
-      history[i].role === "model" &&
-      typeof history[i].text === "string"
-    ) {
-      return history[i].text;
-    }
-  }
-
-  return "";
-}
-
-function isFollowUp(question) {
-  const text = normalize(question);
-
-  return (
-    /^(a\s+)?(dlaczego|czemu|jak to|rozwin\w*|rozszerz\w*|dokladniej|wiecej|przyklad|podaj przyklad|daj przyklad|prosciej|wytlumacz prosciej|wyjasnij prosciej|latwiej|nie rozumiem)( .*)?$/.test(text) ||
-    /\b(notatk\w*|podsumuj\w*|podsumowani\w*)\b/.test(text)
-  );
-}
 export function answerQuestion(question, history = []) {
   const original = String(question || "").trim();
   const text = normalize(original);
