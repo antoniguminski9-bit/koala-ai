@@ -279,15 +279,23 @@ function formatKnowledge(item, intent = "normal") {
 /* Kalkulator z bezpiecznym parserem, bez eval(). */
 
 function calculate(text) {
-  let expression = normalize(text)
-    .replace(/^(ile to|oblicz|policz|policz mi|wynik)\s+/, "")
-    .replace(/[=?]+$/g, "")
+  let expression = String(text || "")
+    .toLowerCase()
+    .replace(/ł/g, "l")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+
+  expression = expression
+    .replace(/^(ile to(?: jest)?|ile jest|oblicz|policz(?: mi)?|wynik)\s+/, "")
+    .replace(/[!?;:]+$/g, "")
     .trim();
 
   if (!expression || expression.length > 120) return null;
 
+  // Procenty
   const percent = expression.match(
-    /^(-?\d+(?:[.,]\d+)?)\s*%\s*(?:z|of)\s*(-?\d+(?:[.,]\d+)?)$/
+    /^(-?\d+(?:[.,]\d+)?)\s*(?:%|procent(?:y|ow|a)?)\s*(?:z\s*)?(-?\d+(?:[.,]\d+)?)$/
   );
 
   if (percent) {
@@ -295,13 +303,23 @@ function calculate(text) {
     const b = Number(percent[2].replace(",", "."));
     const result = a * b / 100;
 
-    return Number.isFinite(result)
-      ? `Wynik: ${formatNumber(result)}.\n\nObliczenie: ${a}% × ${b} = ${formatNumber(result)}.`
-      : null;
+    if (!Number.isFinite(result)) return null;
+
+    return `Wynik: ${formatNumber(result)}.\n\nObliczenie: ${a}% × ${b} = ${formatNumber(result)}.`;
   }
 
+  // Zamiana polskich poleceń na operatory
+  expression = expression
+    .replace(/\b(pomnozone przez|mnozone przez|razy)\b/g, "*")
+    .replace(/\b(plus|dodac)\b/g, "+")
+    .replace(/\b(minus|odjac)\b/g, "-")
+    .replace(/\b(podzielone przez|dzielone przez|podzielic przez|podziel przez|na)\b/g, "/")
+    .replace(/\b(do potegi|podniesione do potegi)\b/g, "^")
+    .replace(/(\d)\s*x\s*(?=\d)/g, "$1 * ")
+    .replace(/,/g, ".");
+
   const tokens = [];
-  const pattern = /\s*(\d+(?:[.,]\d+)?|[()+\-*/×÷^])\s*/gy;
+  const pattern = /\s*(\d+(?:\.\d+)?|[()+\-*/×÷^])\s*/gy;
   let position = 0;
 
   while (position < expression.length) {
@@ -335,10 +353,10 @@ function calculate(text) {
 
     if (/^\d/.test(token || "")) {
       index++;
-      return Number(token.replace(",", "."));
+      return Number(token);
     }
 
-    throw new Error("Wartość");
+    throw new Error("Nieprawidłowa wartość");
   }
 
   function unary() {
@@ -363,7 +381,7 @@ function calculate(text) {
       const right = power();
 
       if (Math.abs(right) > 10) {
-        throw new Error("Potęga");
+        throw new Error("Za duża potęga");
       }
 
       return Math.pow(left, right);
@@ -398,7 +416,9 @@ function calculate(text) {
       const operator = tokens[index++];
       const right = multiplication();
 
-      value = operator === "+" ? value + right : value - right;
+      value = operator === "+"
+        ? value + right
+        : value - right;
     }
 
     return value;
@@ -426,19 +446,27 @@ function formatNumber(value) {
     maximumFractionDigits: 8
   }).format(value);
 }
+function isTopicChange(question) {
+  const text = normalize(question);
 
+  return /\b(zmienmy temat|zmien temat|zmieniamy temat|przejdzmy do|teraz matm\w*|teraz matematy\w*)\b/.test(text);
+}
 function getPreviousTopic(history) {
   if (!Array.isArray(history)) return null;
 
   for (let i = history.length - 1; i >= 0; i--) {
     const item = history[i];
 
-    if (item && item.role === "user" && typeof item.text === "string") {
+    if (!item || item.role !== "user") continue;
+
+    if (isTopicChange(item.text)) {
+      return null;
+    }
+
+    if (typeof item.text === "string") {
       const topic = findKnowledge(item.text);
 
-      if (topic) {
-        return topic;
-      }
+      if (topic) return topic;
     }
   }
 
@@ -460,6 +488,14 @@ function getPreviousAnswer(history) {
   return "";
 }
 
+function isFollowUp(question) {
+  const text = normalize(question);
+
+  return (
+    /^(a\s+)?(dlaczego|czemu|jak to|rozwin\w*|rozszerz\w*|dokladniej|wiecej|przyklad|podaj przyklad|daj przyklad|prosciej|wytlumacz prosciej|wyjasnij prosciej|latwiej|nie rozumiem)( .*)?$/.test(text) ||
+    /\b(notatk\w*|podsumuj\w*|podsumowani\w*)\b/.test(text)
+  );
+}
 export function answerQuestion(question, history = []) {
   const original = String(question || "").trim();
   const text = normalize(original);
@@ -473,59 +509,74 @@ export function answerQuestion(question, history = []) {
   }
 
   if (/^(czesc|hej|siema|witaj|dzien dobry|dobry wieczor|hejka)\b/.test(text)) {
-    return "Cześć! 🐨 Co dzisiaj poznajemy? Mogę wyjaśniać tematy, podawać przykłady, tworzyć notatki i pomagać w obliczeniach.";
+    return "Cześć! 🐨 Co dzisiaj poznajemy? Mogę wyjaśniać tematy, podawać przykłady, tworzyć notatki i pomagać w matematyce.";
   }
 
   if (/\b(jak masz na imie|kim jestes|co to koala)\b/.test(text)) {
-    return "Jestem Koala.ai — własny asystent edukacyjny. Pomagam w nauce, wyjaśniam pojęcia i rozwiązuję wybrane zadania. 🐨";
+    return "Jestem Koala.ai — własny asystent edukacyjny. 🐨";
   }
 
   if (/\b(dziekuje|dzieki|thx)\b/.test(text)) {
     return "Nie ma za co! 🐨";
   }
 
-  if (/\b(do widzenia|na razie)\b/.test(text)) {
-    return "Do zobaczenia! 🐨 Powodzenia w nauce!";
+  if (isTopicChange(original)) {
+    return "Jasne! 🐨 Zmieniamy temat na matematykę. Możemy liczyć, rozwiązywać równania, ćwiczyć procenty albo geometrię. Od czego zaczynamy?";
   }
 
-  const intent = getIntent(original);
-  const currentTopic = findKnowledge(original);
-
-  // Najpierw rozpoznaj temat z aktualnego pytania.
-  if (currentTopic) {
-    return formatKnowledge(currentTopic, intent);
-  }
-
-  // Potem sprawdź, czy użytkownik nawiązuje do wcześniejszej wiadomości.
-  if (isFollowUp(original)) {
-const previousTopic = getPreviousTopic(history);
-const previousAnswer = getPreviousAnswer(history);
-
-    if (previousTopic) {
-      return formatKnowledge(previousTopic, intent === "normal" ? "expand" : intent);
-    }
-
-    if (previousAnswer && !normalize(previousAnswer).startsWith("jeszcze nie znam")) {
-      return `🐨 Odnoszę się do poprzedniej odpowiedzi:\n\n${previousAnswer}\n\nNie mam jeszcze wystarczającej wiedzy, żeby dopowiedzieć nowe, sprawdzone fakty do tego tematu. Możesz podać jego nazwę lub wkleić fragment, który mam wyjaśnić.`;
-    }
-
-    return "🐨 Jasne, mogę rozwinąć temat. Napisz tylko, czego dotyczyło poprzednie pytanie, żebym nie zgadywała.";
-  }
-
-  // Obliczenia matematyczne.
+  // Najpierw sprawdzamy działania matematyczne.
   const calculation = calculate(original);
 
   if (calculation) {
     return calculation;
   }
 
+  // Następnie rozpoznajemy intencję użytkownika.
+  const intent = getIntent(original);
+  const currentTopic = findKnowledge(original);
+
+  if (currentTopic) {
+    return formatKnowledge(currentTopic, intent);
+  }
+
+  // Obsługa kontynuacji rozmowy.
+  if (isFollowUp(original)) {
+    const previousQuestion = Array.isArray(history)
+      ? [...history].reverse().find(
+          item =>
+            item &&
+            item.role === "user" &&
+            typeof item.text === "string"
+        )
+      : null;
+
+    if (previousQuestion && isTopicChange(previousQuestion.text)) {
+      return "Jasne, zaczynamy nowy temat! 🐨 Podaj konkretne pytanie lub zadanie z matematyki.";
+    }
+
+    const previousTopic = getPreviousTopic(history);
+    const previousAnswer = getPreviousAnswer(history);
+
+    if (previousTopic) {
+      return formatKnowledge(
+        previousTopic,
+        intent === "normal" ? "expand" : intent
+      );
+    }
+
+    if (
+      previousAnswer &&
+      !normalize(previousAnswer).startsWith("jeszcze nie znam")
+    ) {
+      return `🐨 Odnoszę się do poprzedniej odpowiedzi:\n\n${previousAnswer}\n\nNie mam jeszcze wystarczającej wiedzy, żeby dodać nowe, sprawdzone fakty. Możesz podać temat lub wkleić fragment do wyjaśnienia.`;
+    }
+
+    return "🐨 Chętnie pomogę! Podaj temat, którego dotyczy Twoja prośba, żebym mogła wyjaśnić go dokładniej.";
+  }
+
   return `🐨 Nie mam jeszcze potwierdzonej odpowiedzi na to pytanie.
 
-Moja baza wiedzy jest rozwijana. Nie chcę wymyślać faktów ani podawać Ci błędnych informacji.
+Nie chcę wymyślać faktów ani podawać Ci błędnych informacji.
 
-Możesz:
-• zadać pytanie innymi słowami,
-• podać temat i poprosić o przykład,
-• poprosić o prostsze wyjaśnienie,
-• poprosić o krótką notatkę.`;
+Możesz zadać pytanie innymi słowami, podać więcej szczegółów albo wkleić treść zadania.`;
 }
