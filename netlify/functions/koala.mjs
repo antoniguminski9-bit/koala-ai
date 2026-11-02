@@ -1,79 +1,77 @@
+/*
+ * Netlify Function dla Koala.ai.
+ * Kontrakt zgodny z obecnym frontendem:
+ * POST JSON { message, history } -> JSON { answer }
+ * Nie korzysta z zewnętrznego modelu AI ani klucza API.
+ */
+
 import { answerQuestion } from "./koala-engine.mjs";
 
-export default async (request) => {
-  const headers = {
-    "Content-Type": "application/json; charset=utf-8",
-    "Cache-Control": "no-store"
-  };
+const JSON_HEADERS = {
+  "Content-Type": "application/json; charset=utf-8",
+  "Cache-Control": "no-store"
+};
 
-  const json = (answer, status = 200) =>
-    new Response(
-      JSON.stringify({ answer }),
-      {
-        status,
-        headers
-      }
-    );
+function jsonResponse(answer, status = 200) {
+  return new Response(JSON.stringify({ answer }), {
+    status,
+    headers: JSON_HEADERS
+  });
+}
 
+function cleanHistory(value) {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .filter(item =>
+      item &&
+      (item.role === "user" || item.role === "model") &&
+      typeof item.text === "string"
+    )
+    .slice(-24)
+    .map(item => ({
+      role: item.role,
+      text: item.text.slice(0, 2000)
+    }));
+}
+
+export default async function handler(request) {
   if (request.method !== "POST") {
-    return json("Dozwolone jest tylko POST.", 405);
+    return jsonResponse("Dozwolone jest tylko POST.", 405);
   }
+
+  let data;
+  try {
+    data = await request.json();
+  } catch {
+    return jsonResponse("Nie udało się odczytać wysłanej wiadomości.", 400);
+  }
+
+  const message = typeof data?.message === "string" ? data.message.trim() : "";
+  if (!message) {
+    return jsonResponse("Napisz pytanie lub wklej treść zadania. 🐨", 400);
+  }
+
+  if (message.length > 2000) {
+    return jsonResponse("Wiadomość jest za długa. Podziel ją na krótsze części.", 413);
+  }
+
+  // Obecny lokalny silnik nie analizuje obrazów. Zwracamy jasny komunikat,
+  // zamiast udawać, że zdjęcie zostało odczytane.
+  if (data?.image) {
+    return jsonResponse(
+      "Na razie nie potrafię odczytać treści ze zdjęcia. Przepisz zadanie lub wklej jego tekst, a pomogę Ci je rozwiązać krok po kroku. 🐨",
+      422
+    );
+  }
+
+  const history = cleanHistory(data?.history);
 
   try {
-    let data;
-
-    try {
-      data = await request.json();
-    } catch {
-      return json("Nie udało się odczytać wiadomości.", 400);
-    }
-
-    if (data.image) {
-      return json(
-        "Na razie nie potrafię jeszcze analizować zdjęć. Możesz przepisać treść zadania i wysłać ją jako wiadomość tekstową. 🐨",
-        422
-      );
-    }
-
-    const question = String(data.message || "").trim();
-
-    if (!question) {
-      return json(
-        "Napisz pytanie, a spróbuję Ci pomóc! 🐨",
-        400
-      );
-    }
-
-    if (question.length > 2000) {
-      return json(
-        "Wiadomość jest za długa. Podziel ją na krótsze części.",
-        413
-      );
-    }
-
-    const history = Array.isArray(data.history)
-      ? data.history
-          .filter(item =>
-            item &&
-            ["user", "model"].includes(item.role) &&
-            typeof item.text === "string"
-          )
-          .slice(-20)
-          .map(item => ({
-            role: item.role,
-            text: item.text.slice(0, 2000)
-          }))
-      : [];
-
-    const answer = answerQuestion(question, history);
-
-    return json(answer);
+    const answer = answerQuestion(message, history);
+    return jsonResponse(typeof answer === "string" ? answer : "Wystąpił nieoczekiwany błąd odpowiedzi. 🐨");
   } catch (error) {
-    console.error("Błąd własnego silnika Koali:", error);
-
-    return json(
-      "Wystąpił błąd w moim własnym silniku. Spróbuj ponownie. 🐨",
-      500
-    );
+    console.error("Koala.ai engine error:", error);
+    return jsonResponse("Wystąpił błąd w silniku Koali. Spróbuj ponownie za chwilę. 🐨", 500);
   }
-};
+}
