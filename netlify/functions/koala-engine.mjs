@@ -273,17 +273,35 @@ function getPreviousTopic(history) {
 }
 
 function cleanMathExpression(input) {
-  return normalize(input)
-    .replace(/^(ile to(?: jest)?|ile jest|oblicz|policz(?: mi)?|wynik)\s+/, "")
+  let expression = String(input || "")
+    .toLowerCase()
+    .replace(/ł/g, "l")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+
+  // Usuwamy typowe polecenia przed samym działaniem.
+  expression = expression.replace(
+    /^(?:ile to(?: jest)?|ile jest|oblicz|policz(?: mi)?|wynik|rozwiąż(?: mi)?|rozwiaz(?: mi)?|zrób(?: mi)? zadanie(?: ze słupkiem)?|zrob(?: mi)? zadanie(?: ze slupkiem)?|zrób(?: mi)? działanie|zrob(?: mi)? dzialanie)\s+/,
+    ""
+  );
+
+  expression = expression
     .replace(/[?!]+$/g, "")
     .replace(/\b(pomnozone przez|mnozone przez|razy)\b/g, "*")
     .replace(/\b(plus|dodac)\b/g, "+")
     .replace(/\b(minus|odjac)\b/g, "-")
     .replace(/\b(podzielone przez|dzielone przez|podzielic przez|podziel przez)\b/g, "/")
     .replace(/\b(do potegi|podniesione do potegi)\b/g, "^")
-    .replace(/\bprocent(?:y|ow)?\s+z\b/g, "% z")
+    .replace(/\bprocent(?:y|ow|a)?\s+z\b/g, "% z")
+    .replace(/[×]/g, "*")
+    .replace(/[÷]/g, "/")
+    .replace(/(\d),(\d)/g, "$1.$2")
     .replace(/(\d)\s*x\s*(?=\d)/g, "$1 * ")
+    .replace(/\s+/g, " ")
     .trim();
+
+  return expression;
 }
 
 function parseSimpleArithmetic(input) {
