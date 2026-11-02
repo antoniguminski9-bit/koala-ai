@@ -1,77 +1,91 @@
-/*
- * Netlify Function dla Koala.ai.
- * Kontrakt zgodny z obecnym frontendem:
- * POST JSON { message, history } -> JSON { answer }
- * Nie korzysta z zewnętrznego modelu AI ani klucza API.
- */
-
 import { answerQuestion } from "./koala-engine.mjs";
 
-const JSON_HEADERS = {
-  "Content-Type": "application/json; charset=utf-8",
-  "Cache-Control": "no-store"
-};
+const MAX_MESSAGE_LENGTH = 2000;
+const MAX_HISTORY_ITEMS = 24;
 
-function jsonResponse(answer, status = 200) {
-  return new Response(JSON.stringify({ answer }), {
+function jsonResponse(data, status = 200) {
+  return new Response(JSON.stringify(data), {
     status,
-    headers: JSON_HEADERS
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store"
+    }
   });
 }
 
-function cleanHistory(value) {
-  if (!Array.isArray(value)) return [];
-
-  return value
-    .filter(item =>
-      item &&
-      (item.role === "user" || item.role === "model") &&
-      typeof item.text === "string"
-    )
-    .slice(-24)
-    .map(item => ({
-      role: item.role,
-      text: item.text.slice(0, 2000)
-    }));
-}
-
 export default async function handler(request) {
+  // Obsługujemy tylko żądania POST.
   if (request.method !== "POST") {
-    return jsonResponse("Dozwolone jest tylko POST.", 405);
-  }
-
-  let data;
-  try {
-    data = await request.json();
-  } catch {
-    return jsonResponse("Nie udało się odczytać wysłanej wiadomości.", 400);
-  }
-
-  const message = typeof data?.message === "string" ? data.message.trim() : "";
-  if (!message) {
-    return jsonResponse("Napisz pytanie lub wklej treść zadania. 🐨", 400);
-  }
-
-  if (message.length > 2000) {
-    return jsonResponse("Wiadomość jest za długa. Podziel ją na krótsze części.", 413);
-  }
-
-  // Obecny lokalny silnik nie analizuje obrazów. Zwracamy jasny komunikat,
-  // zamiast udawać, że zdjęcie zostało odczytane.
-  if (data?.image) {
     return jsonResponse(
-      "Na razie nie potrafię odczytać treści ze zdjęcia. Przepisz zadanie lub wklej jego tekst, a pomogę Ci je rozwiązać krok po kroku. 🐨",
-      422
+      { answer: "Ta funkcja obsługuje żądania POST." },
+      405
     );
   }
 
-  const history = cleanHistory(data?.history);
+  let body;
+
+  try {
+    body = await request.json();
+  } catch {
+    return jsonResponse(
+      { answer: "Nie udało się odczytać wiadomości. Wyślij ją ponownie." },
+      400
+    );
+  }
+
+  // Sprawdzamy wiadomość.
+  if (
+    !body ||
+    typeof body.message !== "string" ||
+    !body.message.trim()
+  ) {
+    return jsonResponse(
+      { answer: "Napisz pytanie, a Koala spróbuje Ci pomóc." },
+      400
+    );
+  }
+
+  const message = body.message.trim();
+
+  if (message.length > MAX_MESSAGE_LENGTH) {
+    return jsonResponse(
+      {
+        answer: `Wiadomość jest za długa. Maksymalnie ${MAX_MESSAGE_LENGTH} znaków.`
+      },
+      413
+    );
+  }
+
+  // W tej wersji silnik nie analizuje przesłanych obrazów.
+  if (typeof body.image === "string" && body.image.length > 0) {
+    return jsonResponse({
+      answer: "🐨 W tej wersji nie potrafię jeszcze odczytywać obrazów. Wklej treść zadania jako tekst, a spróbuję Ci pomóc."
+    });
+  }
+
+  // Ograniczamy długość historii rozmowy.
+  const history = Array.isArray(body.history)
+    ? body.history
+        .filter(item => item && typeof item === "object")
+        .slice(-MAX_HISTORY_ITEMS)
+    : [];
 
   try {
     const answer = answerQuestion(message, history);
-    return jsonResponse(typeof answer === "string" ? answer : "Wystąpił nieoczekiwany błąd odpowiedzi. 🐨");
+
+    return jsonResponse({
+      answer: typeof answer === "string"
+        ? answer
+        : "Nie udało mi się przygotować odpowiedzi. Spróbuj ponownie."
+    });
   } catch (error) {
-    console.error("Koala.ai engine error:", error);
-    return jsonResponse("Wystąpił błąd w silniku Koali. Spróbuj ponownie za chwilę. 🐨", 500);
+    console.error("Koala function error:", error);
+
+    return jsonResponse(
+      {
+        answer: "🐨 Wystąpił błąd podczas przygotowywania odpowiedzi. Spróbuj ponownie."
+      },
+      500
+    );
   }
 }
