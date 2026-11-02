@@ -893,10 +893,29 @@ footer {
 .material-photo-input{display:block;width:100%;padding:10px;border:1px solid var(--border-color,#ccc);border-radius:10px;background:var(--card-bg,transparent)}
 .material-photo-preview img{display:block;max-width:100%;max-height:260px;object-fit:contain;margin:10px 0;border-radius:12px}
 .material-photo-preview:empty{display:none}
-/* Logowanie odbywa się w hubie Koale. */ .login-screen{display:none!important}</style>
+</style>
+
+<style>
+.auth-transition{position:fixed;inset:0;z-index:1000000;display:none;align-items:center;justify-content:center;padding:24px;background:#090d15;color:#f8fafc;font-family:system-ui,-apple-system,Segoe UI,sans-serif;text-align:center}
+.auth-transition-card{min-width:240px;padding:28px 34px;border:1px solid #34445b;border-radius:20px;background:#172438;box-shadow:0 20px 60px #0008}
+.auth-spinner{width:42px;height:42px;margin:0 auto 18px;border:4px solid #3b4c63;border-top-color:#86efac;border-radius:50%;animation:authSpin .8s linear infinite}
+.auth-check{display:none;width:46px;height:46px;margin:0 auto 14px;border-radius:50%;background:#34d399;color:#062418;font-size:30px;font-weight:900;line-height:46px}
+.auth-transition p{margin:0;font-size:20px;font-weight:750}
+@keyframes authSpin{to{transform:rotate(360deg)}}
+html.auth-pending #authTransition{display:flex!important}
+html.auth-pending body>*:not(#authTransition){visibility:hidden!important}
+</style>
+<script>try{if(new URLSearchParams(location.hash.slice(1)).has("koale_auth"))document.documentElement.classList.add("auth-pending")}catch(e){}</script>
 </head>
 
 <body>
+<div id="authTransition" class="auth-transition" role="status" aria-live="polite">
+  <div class="auth-transition-card">
+    <div id="authSpinner" class="auth-spinner"></div>
+    <div id="authCheck" class="auth-check">✓</div>
+    <p id="authTransitionText">Logowanie...</p>
+  </div>
+</div>
 
 <!-- ============================= -->
 <!-- LOGOWANIE -->
@@ -5092,6 +5111,22 @@ function renderAll() {
    START
    ========================================================= */
 
+function finishPortalHandoff(success) {
+  const root = document.documentElement;
+  if (!root.classList.contains("auth-pending")) return;
+  const spinner = document.getElementById("authSpinner");
+  const check = document.getElementById("authCheck");
+  const text = document.getElementById("authTransitionText");
+  if (spinner) spinner.style.display = success ? "none" : "none";
+  if (check) {
+    check.style.display = "block";
+    check.textContent = success ? "✓" : "!";
+    if (!success) { check.style.background = "#fbbf24"; check.style.color = "#422006"; }
+  }
+  if (text) text.textContent = success ? "Zalogowano" : "Nie udało się zalogować";
+  window.setTimeout(() => root.classList.remove("auth-pending"), success ? 700 : 1000);
+}
+
 async function start() {
   let receivedHandoff = false;
   const params = new URLSearchParams(location.hash.slice(1));
@@ -5108,77 +5143,60 @@ async function start() {
     } catch (e) {}
     history.replaceState(null, "", location.pathname + location.search);
   }
-  if (window.top === window.self && !receivedHandoff) {
-    window.location.replace("https://koale.netlify.app/?open=zadania");
-    return;
-  }
-  const hubToken = sessionStorage.getItem("koale_apps_script_token") || localStorage.getItem("koale_apps_script_token");
-  const hubSession = sessionStorage.getItem("koale_session") || localStorage.getItem("koale_remembered_session");
-  if (!hubToken || !hubSession) {
-    document.getElementById("loginScreen")?.classList.add("hidden");
-    try { parent.postMessage({type:"koale-auth-required"}, location.origin); } catch (e) {}
-    return;
-  }
-  loadLocal();
 
+  loadLocal();
   role = "guest";
   currentUser = null;
-
   const loginScreen = document.getElementById("loginScreen");
-  if (loginScreen) loginScreen.classList.remove("hidden");
 
+  if (!receivedHandoff) {
+    document.documentElement.classList.remove("auth-pending");
+    loginScreen?.classList.remove("hidden");
+    updateAccess();
+    renderAll();
+    startChatRefresh();
+    return;
+  }
+
+  loginScreen?.classList.add("hidden");
   updateAccess();
   renderAll();
 
-  /*
-   * Bootstrap wymaga ważnego tokenu. Wcześniej start() wywoływał
-   * syncFromSheets() bez tokenu, więc serwer odrzucał żądanie, a
-   * przywracanie sesji nie mogło zadziałać po odświeżeniu strony.
-   */
-  const remembered = localStorage.getItem("koale_remembered_session");
-  const tabSession = sessionStorage.getItem("koale_session");
-  const savedToken = localStorage.getItem("koale_apps_script_token") ||
-                     sessionStorage.getItem("koale_apps_script_token");
-
+  const savedToken = sessionStorage.getItem("koale_apps_script_token") || localStorage.getItem("koale_apps_script_token");
+  const savedSession = sessionStorage.getItem("koale_session") || localStorage.getItem("koale_remembered_session");
   let restored = false;
-  if (savedToken && (remembered || tabSession)) {
-    setSync("⏳ Sprawdzam zapisaną sesję...");
+
+  if (savedToken && savedSession) {
+    setSync("⏳ Sprawdzam sesję z portalu...");
     await syncFromSheets(savedToken);
-    if (usersLoaded) {
-      restored = restoreRememberedSession();
-    }
+    if (usersLoaded) restored = restoreRememberedSession();
     if (restored) {
-      /* Upewnij się, że sesja jest aktywna po stronie Apps Script. */
       await syncFromSheets(savedToken);
       if (!usersLoaded) {
         restored = false;
         role = "guest";
         currentUser = null;
-        localStorage.removeItem("koale_remembered_session");
-        localStorage.removeItem("koale_apps_script_token");
         sessionStorage.removeItem("koale_session");
         sessionStorage.removeItem("koale_apps_script_token");
-        loginScreen?.classList.remove("hidden");
-        updateAccess();
+        localStorage.removeItem("koale_remembered_session");
+        localStorage.removeItem("koale_apps_script_token");
       }
     }
-  } else {
-    usersLoaded = false;
   }
 
   renderAll();
-  startChatRefresh();
-  pollMaintenanceState();
-
-  if (!restored) {
-    document.getElementById("loginScreen")?.classList.add("hidden");
-    if (window.top === window.self) {
-      window.location.replace("https://koale.netlify.app/?open=zadania");
-    } else {
-      try { parent.postMessage({type:"koale-auth-required"}, location.origin); } catch (e) {}
-    }
+  if (restored) {
+    finishPortalHandoff(true);
+    startChatRefresh();
+    pollMaintenanceState();
     return;
   }
+
+  loginScreen?.classList.remove("hidden");
+  updateAccess();
+  setStatus("loginStatus", "Sesja portalu wygasła. Zaloguj się tutaj ponownie.", true);
+  finishPortalHandoff(false);
+  startChatRefresh();
 }
 
 
