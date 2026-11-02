@@ -236,16 +236,48 @@ function containsPhrase(text, phrase) {
 
 function findKnowledge(question) {
   const text = normalize(question);
+
+  const aliases = {
+    "Rzeczownik": ["rzeczownika", "rzeczowniku"],
+    "Czasownik": ["czasownika", "czasowniku"],
+    "Przymiotnik": ["przymiotnika", "przymiotniku"],
+    "Przysłówek": ["przysłówka", "przysłówku"],
+    "Zaimek": ["zaimka", "zaimku"],
+    "Liczby pierwsze": ["liczb pierwszych", "liczbach pierwszych"],
+    "Ułamki zwykłe": ["ułamka zwykłego", "ułamków zwykłych", "ułamkach zwykłych"],
+    "Procenty": ["procentów", "procencie", "procentach"],
+    "Pole kwadratu": ["pola kwadratu", "polu kwadratu"],
+    "Pole prostokąta": ["pola prostokąta", "polu prostokąta"],
+    "Obwód kwadratu": ["obwodu kwadratu", "obwodzie kwadratu"],
+    "Obwód prostokąta": ["obwodu prostokąta", "obwodzie prostokąta"],
+    "Fotosynteza": ["fotosyntezy", "fotosyntezie"],
+    "Oddychanie komórkowe": ["oddychania komórkowego", "oddychaniu komórkowym"],
+    "Komórka": ["komórki", "komórce"],
+    "Układ Słoneczny": ["układu słonecznego", "układzie słonecznym"],
+    "Grawitacja": ["grawitacji"],
+    "Atom": ["atomu", "atomie"],
+    "Energia": ["energii", "energię"],
+    "Demokracja": ["demokracji"],
+    "Pan Tadeusz": ["pana tadeusza"],
+    "Druga wojna światowa": ["drugiej wojny światowej", "drugiej wojnie światowej"],
+    "Najdłuższa rzeka Polski": ["najdłuższej rzeki polski"]
+  };
+
   let best = null;
   let bestScore = 0;
 
   for (const item of knowledge) {
-    for (const keyword of item.keywords) {
+    const terms = [
+      ...(item.keywords || []),
+      ...(aliases[item.title] || [])
+    ];
+
+    for (const keyword of terms) {
       const normalizedKeyword = normalize(keyword);
 
       if (
-        containsPhrase(text, normalizedKeyword) &&
-        normalizedKeyword.length > bestScore
+        normalizedKeyword.length > bestScore &&
+        containsPhrase(text, normalizedKeyword)
       ) {
         best = item;
         bestScore = normalizedKeyword.length;
@@ -1045,7 +1077,225 @@ function getSafeHistory(history) {
 // ==========================================
 // GŁÓWNA FUNKCJA SILNIKA
 // ==========================================
+// ==========================================
+// KOALA TEACHER — TRYB NAUCZYCIELA
+// ==========================================
 
+const teacherAnswerRules = {
+  "Rzeczownik": {
+    all: ["kot"],
+    hint: "Poszukaj wyrazu nazywającego zwierzę."
+  },
+  "Czasownik": {
+    all: ["graja"],
+    hint: "Szukaj wyrazu, który oznacza wykonywaną czynność."
+  },
+  "Przymiotnik": {
+    all: ["maly"],
+    hint: "Przymiotnik odpowiada między innymi na pytanie: jaki?"
+  },
+  "Przysłówek": {
+    all: ["kiedy"],
+    hint: "Zastanów się, na jakie pytanie odpowiada wyraz „wczoraj”."
+  },
+  "Zaimek": {
+    all: ["ona", "swoja"],
+    hint: "W zdaniu są dwa wyrazy zastępujące inne części mowy."
+  },
+  "Liczby pierwsze": {
+    all: ["3"],
+    hint: "Sprawdź, czy 15 można podzielić przez 3 bez reszty."
+  },
+  "Ułamki zwykłe": {
+    all: ["2", "5"],
+    hint: "Licznik jest nad kreską, a mianownik pod kreską."
+  },
+  "Procenty": {
+    all: ["8"],
+    hint: "10% to jedna dziesiąta liczby. Oblicz jedną dziesiątą z 80."
+  },
+  "Pole kwadratu": {
+    all: ["25"],
+    hint: "Pomnóż długość boku przez samą siebie: 5 × 5."
+  },
+  "Pole prostokąta": {
+    all: ["14"],
+    hint: "Pole obliczamy, mnożąc długości dwóch boków."
+  },
+  "Obwód kwadratu": {
+    all: ["24"],
+    hint: "Kwadrat ma cztery równe boki. Dodaj je."
+  },
+  "Obwód prostokąta": {
+    all: ["24"],
+    hint: "Dodaj wszystkie cztery boki: 8 + 4 + 8 + 4."
+  },
+  "Fotosynteza": {
+    all: ["woda", "dwutlenek wegla"],
+    hint: "Pomyśl, jakie dwa surowce roślina pobiera ze środowiska."
+  },
+  "Oddychanie komórkowe": {
+    all: ["tlen"],
+    hint: "Pomyśl, jaki gaz pobieramy podczas oddychania tlenowego."
+  },
+  "Komórka": {
+    any: ["chloroplast", "sciana komorkowa"],
+    hint: "Pomyśl o strukturach, które odróżniają komórkę roślinną."
+  },
+  "Układ Słoneczny": {
+    all: ["merkury"],
+    hint: "To najmniejsza planeta Układu Słonecznego i znajduje się najbliżej Słońca."
+  },
+  "Grawitacja": {
+    all: ["ziemia", "przyciaga"],
+    hint: "Pomyśl, co sprawia, że puszczona piłka spada na podłoże."
+  },
+  "Atom": {
+    all: ["proton", "neutron"],
+    hint: "W jądrze atomu znajdują się dwa rodzaje cząstek."
+  },
+  "Energia": {
+    all: ["kinetyczna"],
+    hint: "To energia związana z ruchem."
+  },
+  "Demokracja": {
+    all: ["wybory"],
+    hint: "Pomyśl, w jaki sposób obywatele wybierają swoich przedstawicieli."
+  },
+  "Pan Tadeusz": {
+    all: ["adam", "mickiewicz"],
+    hint: "Chodzi o polskiego poetę epoki romantyzmu."
+  },
+  "Druga wojna światowa": {
+    all: ["1939"],
+    hint: "Pomyśl o roku ataku Niemiec na Polskę."
+  },
+  "Najdłuższa rzeka Polski": {
+    any: ["baltyk", "baltyckiego"],
+    hint: "Wisła uchodzi do morza na północy Polski."
+  }
+};
+
+
+// Rozpoczęcie lekcji
+
+function startTeacherLesson(item) {
+  if (!item) return null;
+
+  return `🐨 🧑‍🏫 TRYB NAUCZYCIELA
+
+Temat lekcji: ${item.title}
+
+KROK 1 — POZNAJMY TEMAT
+
+${item.short}
+
+KROK 2 — ZROZUMIENIE
+
+${item.explanation}
+
+KROK 3 — PRZYKŁAD
+
+${item.example}
+
+🧑‍🏫 PYTANIE DO CIEBIE
+
+${item.check}
+
+Odpowiedz własnymi słowami. Nie musisz się spieszyć. Sprawdzę odpowiedź i dam Ci podpowiedź, jeśli będzie potrzebna.`;
+}
+
+
+// Odczyt aktywnej lekcji z historii
+
+function getActiveTeacherTopic(history) {
+  const previousAnswer = getPreviousAnswer(history);
+
+  if (
+    !previousAnswer ||
+    (
+      !previousAnswer.includes("🧑‍🏫 PYTANIE DO CIEBIE") &&
+      !previousAnswer.includes("🧑‍🏫 PODPOWIEDŹ")
+    )
+  ) {
+    return null;
+  }
+
+  const match = previousAnswer.match(
+    /Temat lekcji:\s*([^\n]+)/i
+  );
+
+  if (!match) return null;
+
+  const title = normalize(match[1]);
+
+  return knowledge.find(
+    item => normalize(item.title) === title
+  ) || null;
+}
+
+
+// Sprawdzanie odpowiedzi ucznia
+
+function evaluateTeacherAnswer(item, answer) {
+  if (!item || typeof answer !== "string") {
+    return null;
+  }
+
+  const rules = teacherAnswerRules[item.title];
+
+  if (!rules) return null;
+
+  const studentAnswer = normalize(answer);
+
+  if (!studentAnswer) return null;
+
+  // Jedno hasło lub jedna z kilku poprawnych form.
+  function matchesEntry(entry) {
+    const alternatives = Array.isArray(entry)
+      ? entry
+      : [entry];
+
+    return alternatives.some(term =>
+      containsPhrase(studentAnswer, term)
+    );
+  }
+
+  // Wszystkie wymagane elementy muszą wystąpić.
+  const allCorrect = (rules.all || [])
+    .every(matchesEntry);
+
+  // Wystarczy jedna z dopuszczonych odpowiedzi.
+  const anyCorrect = !rules.any ||
+    rules.any.some(matchesEntry);
+
+  if (allCorrect && anyCorrect) {
+    return `🐨 🧑‍🏫 BARDZO DOBRZE!
+
+Twoja odpowiedź jest poprawna!
+
+Temat: ${item.title}
+
+Właśnie wykonałeś ważny krok w nauce. Najważniejsze jest to, że samodzielnie spróbowałeś znaleźć odpowiedź.
+
+Zapamiętaj:
+${item.related}
+
+🎓 Lekcja zakończona! Możemy przejść do następnego tematu.`;
+  }
+
+  return `🐨 🧑‍🏫 PODPOWIEDŹ
+
+Temat lekcji: ${item.title}
+
+Jeszcze nie całkiem! Ale spokojnie — właśnie na tym polega nauka.
+
+${rules.hint}
+
+Spróbuj odpowiedzieć jeszcze raz własnymi słowami.
+
+Nie podam Ci od razu gotowego rozwiązania. Chcę pomóc Ci samodzielnie je znaleźć.`;
+}
 export function answerQuestion(question, history = []) {
   try {
     const text = String(question ?? "").trim();
@@ -1061,6 +1311,33 @@ export function answerQuestion(question, history = []) {
     const safeHistory = getSafeHistory(history);
     const normalized = normalize(text);
     const intent = getIntent(text);
+        // ==========================================
+    // OBSŁUGA ODPOWIEDZI UCZNIA
+    // ==========================================
+
+    const activeTeacherTopic =
+      getActiveTeacherTopic(safeHistory);
+
+    if (
+      activeTeacherTopic &&
+      !isFollowUp(text) &&
+      !isGreetingMessage(text)
+    ) {
+      if (
+        /^(koniec lekcji|zakoncz lekcje|stop)$/i.test(normalized)
+      ) {
+        return "🐨 Lekcja zakończona! Dobra robota. Możemy rozpocząć nowy temat.";
+      }
+
+      const teacherResult = evaluateTeacherAnswer(
+        activeTeacherTopic,
+        text
+      );
+
+      if (teacherResult) {
+        return teacherResult;
+      }
+    }
 
     // POWITANIE
 
@@ -1131,12 +1408,19 @@ export function answerQuestion(question, history = []) {
 
     const knowledgeItem = findKnowledge(text);
 
-    if (knowledgeItem) {
-      return formatKnowledge(
-        knowledgeItem,
-        intent
-      );
-    }
+   if (knowledgeItem) {
+  const wantsTeacher =
+    /\b(naucz mnie|nauczysz mnie|tryb nauczyciela|lekcja|lekcje|przepytaj mnie|sprawdz mnie|zrob quiz|quiz)\b/i.test(normalized);
+
+  if (wantsTeacher || intent === "quiz") {
+    return startTeacherLesson(knowledgeItem);
+  }
+
+  return formatKnowledge(
+    knowledgeItem,
+    intent
+  );
+}
 
     // NAUKA I ĆWICZENIA
 
