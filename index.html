@@ -1575,7 +1575,7 @@ html.auth-pending body>*:not(#authTransition){visibility:hidden!important}
 
       <div class="ai-message bot">
         Cześć! 🐨 Jestem Koala.ai.
-        Napisz mi, z czym masz problem.
+        Napisz mi, co chcesz się dzisiaj dowiedzieć.
         Mogę pomóc Ci zrozumieć zadanie,
         wyjaśnić temat albo sprawdzić tok rozumowania.
       </div>
@@ -1620,12 +1620,6 @@ html.auth-pending body>*:not(#authTransition){visibility:hidden!important}
   </button>
 
   <span id="aiImageName"></span>
-
-  <textarea
-    id="aiInput"
-    placeholder="Np. Wyjaśnij mi równania kwadratowe..."
-    onkeydown="handleAIKey(event)"
-  ></textarea>
 
   <button
     class="button ai-send"
