@@ -1877,7 +1877,7 @@ function showPage(page, button) {
     updateChatUnreadDot();
   }
 
-  if (role === "guest" && page !== "zadania" && page !== "plan") {
+  if (role === "guest" && page !== "zadania" && page !== "plan" && page !== "gry") {
     setStatus(
       "loginStatus",
       "🔒 Ta sekcja wymaga zalogowania."
@@ -2378,7 +2378,7 @@ function updateAccess() {
     maintenanceButton.style.display = isSadmin ? "inline-block" : "none";
   }
   if (guestBackLogin) guestBackLogin.classList.toggle("hidden", role !== "guest");
-  if (navGry) navGry.classList.toggle("hidden", role === "guest");
+  if (navGry) navGry.classList.remove("hidden");
 
   if (currentUser && (role === "sadmin" || role === "sadmin" || role === "sadmin" || role === "admin" || role === "nauczyciel" || role === "moderator" || role === "student")) {
     userArea.classList.remove("hidden");
