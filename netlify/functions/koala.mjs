@@ -16,8 +16,9 @@ function jsonResponse(data, status = 200) {
 
 // Ujednolicamy tekst, aby wykrywać odpowiedź o braku wiedzy.
 function normalizeSearchText(text) {
-  return text
+  return String(text || "")
     .toLocaleLowerCase("pl-PL")
+    .replace(/ł/g, "l")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 }
