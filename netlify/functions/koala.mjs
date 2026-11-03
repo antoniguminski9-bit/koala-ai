@@ -128,6 +128,156 @@ Pamiętaj, aby sprawdzić podane źródła. Są to materiały pomocnicze, a nie 
     return null;
   }
 }
+// WYSZUKIWANIE W WIKIDANYCH
+async function searchWikidata(question) {
+  try {
+    const params = new URLSearchParams({
+      action: "wbsearchentities",
+      search: question,
+      language: "pl",
+      uselang: "pl",
+      type: "item",
+      limit: "3",
+      format: "json"
+    });
+
+    const response = await fetch(
+      `https://www.wikidata.org/w/api.php?${params}`,
+      {
+        headers: {
+          "Accept": "application/json",
+          "User-Agent": "KoalaAI/1.0 (educational project)"
+        }
+      }
+    );
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const results = data?.search || [];
+
+    if (results.length === 0) return null;
+
+    const entries = results.slice(0, 3).map(item => {
+      return `**${item.label || "Brak nazwy"}**
+
+${item.description || "Brak opisu"}
+
+Źródło: https://www.wikidata.org/wiki/${item.id}`;
+    });
+
+    return `### Wikidane
+
+${entries.join("\n\n")}`;
+  } catch (error) {
+    console.error("Wikidata search error:", error);
+    return null;
+  }
+}
+
+
+// WYSZUKIWANIE PUBLIKACJI NAUKOWYCH
+async function searchCrossref(question) {
+  try {
+    const params = new URLSearchParams({
+      "query.bibliographic": question,
+      rows: "3",
+      select: "DOI,title,author,published,container-title,URL"
+    });
+
+    const response = await fetch(
+      `https://api.crossref.org/works?${params}`,
+      {
+        headers: {
+          "Accept": "application/json",
+          "User-Agent": "KoalaAI/1.0 (educational project)"
+        }
+      }
+    );
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const results = data?.message?.items || [];
+
+    if (results.length === 0) return null;
+
+    const entries = results.slice(0, 3).map((item, index) => {
+      const title = item.title?.[0] || "Publikacja bez tytułu";
+
+      const authors = (item.author || [])
+        .slice(0, 3)
+        .map(author =>
+          [author.given, author.family].filter(Boolean).join(" ")
+        )
+        .filter(Boolean)
+        .join(", ");
+
+      const dateParts =
+        item.published?.["date-parts"]?.[0] || [];
+
+      const year = dateParts[0] || "Brak daty";
+
+      const journal =
+        item["container-title"]?.[0] || "Nie podano czasopisma";
+
+      const url =
+        item.URL ||
+        (item.DOI ? `https://doi.org/${item.DOI}` : null);
+
+      return `${index + 1}. **${title}**
+
+Autorzy: ${authors || "Nie podano"}
+
+Rok: ${year}
+
+Publikacja: ${journal}
+
+${url ? `Źródło: ${url}` : "Brak linku do publikacji"}`;
+    });
+
+    return `### Publikacje naukowe — Crossref
+
+${entries.join("\n\n")}`;
+  } catch (error) {
+    console.error("Crossref search error:", error);
+    return null;
+  }
+}
+
+
+// ŁĄCZY WYNIKI Z RÓŻNYCH ŹRÓDEŁ
+async function searchAllSources(question) {
+  const [wikipedia, wikidata, crossref] = await Promise.all([
+    searchWikipedia(question),
+    searchWikidata(question),
+    searchCrossref(question)
+  ]);
+
+  const sections = [
+    wikipedia,
+    wikidata,
+    crossref
+  ].filter(Boolean);
+
+  if (sections.length === 0) return null;
+
+  return `🐨 Sprawdziłam kilka źródeł internetowych.
+
+${sections.join("\n\n---\n\n")}
+
+---
+
+**Ważne:** znalezione materiały nie zawsze potwierdzają tę samą informację. Wikidane zawierają dane encyklopedyczne, a Crossref przede wszystkim metadane publikacji. Warto otworzyć źródła i sprawdzić ich treść.`;
+}
+
+
+// ROZPOZNAWANIE PROŚBY O WERYFIKACJĘ
+function asksToVerifyOnline(message) {
+  const text = normalizeSearchText(message);
+
+  return /\b(sprawdz|zweryfikuj|potwierdz|skontroluj)\b/.test(text);
+}
 
 export default async function handler(request) {
   if (request.method !== "POST") {
@@ -193,16 +343,30 @@ export default async function handler(request) {
 
     // Dopiero gdy lokalna baza nie zna odpowiedzi,
     // próbujemy wyszukać informacje w internecie.
-    if (isLocalUnknown(finalAnswer)) {
-      const internetAnswer = await searchWikipedia(message);
+const shouldSearchOnline =
+  isLocalUnknown(finalAnswer) ||
+  asksToVerifyOnline(message);
 
-      if (internetAnswer) {
-        finalAnswer = internetAnswer;
-      } else {
-        finalAnswer +=
-          "\n\n🐨 Nie udało mi się teraz znaleźć dodatkowych materiałów w internecie. Spróbuj ponownie później.";
-      }
+if (shouldSearchOnline) {
+  const internetAnswer = await searchAllSources(message);
+
+  if (internetAnswer) {
+    if (isLocalUnknown(finalAnswer)) {
+      finalAnswer = internetAnswer;
+    } else {
+      finalAnswer += `
+
+---
+
+🐨 Sprawdziłam również informacje w internecie.
+
+${internetAnswer}`;
     }
+  } else {
+    finalAnswer +=
+      "\n\n🐨 Nie udało mi się teraz znaleźć dodatkowych materiałów w internecie. Spróbuj ponownie później.";
+  }
+}
 
     return jsonResponse({
       answer: finalAnswer
