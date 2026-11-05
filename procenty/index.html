@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b120e">
+  <title>Koale — Procentownik</title>
+  <style>
+    :root{color-scheme:dark;--bg:#0b120e;--panel:#131d16;--panel2:#19251c;--line:#2c3d30;--text:#f5faf5;--muted:#a5b5a8;--green:#a6edaa;--green2:#64c77b;--lime:#def6b4;--shadow:0 24px 70px #0006}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -15%,#294832 0,transparent 44%),var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+    button,input{font:inherit}.topbar{height:72px;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(18px,5vw,72px);border-bottom:1px solid #ffffff12;background:#0b120ebf;backdrop-filter:blur(16px)}
+    .brand{display:flex;align-items:center;gap:11px;color:var(--text);text-decoration:none;font-weight:900;letter-spacing:-.05em;font-size:22px}.mark{display:grid;place-items:center;width:38px;height:38px;border-radius:13px;background:linear-gradient(145deg,#baf2b5,#58be76);font-size:22px;box-shadow:0 5px 22px #58d27b30}.brand-name span{color:var(--green)}.back{color:#d0dbd1;text-decoration:none;border:1px solid var(--line);border-radius:11px;padding:10px 14px;font-size:13px;font-weight:750}.back:hover{border-color:#66806b;background:#ffffff08}
+    main{width:min(900px,calc(100% - 32px));margin:0 auto;padding:55px 0 70px}.intro{text-align:center;margin-bottom:30px}.eyebrow{display:inline-flex;align-items:center;gap:8px;color:var(--green);font-size:11px;letter-spacing:.16em;font-weight:900;text-transform:uppercase}.eyebrow:before{content:"";width:20px;height:1px;background:var(--green)}h1{margin:14px 0 0;font-size:clamp(38px,7vw,66px);line-height:1;letter-spacing:-.065em;font-weight:950}.intro p{max-width:590px;margin:15px auto 0;color:var(--muted);font-size:15px;line-height:1.65}
+    .card{border:1px solid var(--line);border-radius:24px;background:linear-gradient(155deg,#17221a,#111813);box-shadow:var(--shadow);overflow:hidden}.card-head{padding:22px 26px;border-bottom:1px solid var(--line);background:#ffffff03}.card-head h2{margin:0;font-size:17px}.card-head p{margin:6px 0 0;color:var(--muted);font-size:13px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:26px}.field label{display:block;margin-bottom:9px;color:#d5e0d6;font-size:13px;font-weight:800}.input-wrap{position:relative}.input-wrap input{width:100%;height:58px;border:1px solid #3a4c3d;border-radius:14px;background:#0b120e;color:var(--text);padding:0 54px 0 16px;font-size:20px;font-weight:800;outline:none;transition:.18s}.input-wrap input:focus{border-color:var(--green2);box-shadow:0 0 0 3px #64c77b24}.suffix{position:absolute;right:17px;top:50%;transform:translateY(-50%);color:#8fa293;font-size:13px;font-weight:700;pointer-events:none}.hint{margin:8px 0 0;color:#7f9082;font-size:11px}
+    .result{margin:0 26px 26px;padding:23px;border:1px solid #36533a;border-radius:18px;background:linear-gradient(135deg,#1a2d1e,#16231a);transition:.2s}.result-top{display:flex;align-items:center;justify-content:space-between;gap:16px}.result-label{color:#b8c9bb;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.grade{display:grid;place-items:center;min-width:70px;height:70px;border-radius:21px;background:linear-gradient(145deg,#b9efad,#69c77b);color:#102217;font-size:38px;line-height:1;font-weight:950;box-shadow:0 8px 24px #55c57325}.percent{margin-top:8px;font-size:clamp(34px,6vw,54px);font-weight:950;letter-spacing:-.06em}.status{margin:3px 0 0;color:#c4d4c6;font-size:14px}.bar{height:10px;margin-top:20px;border-radius:99px;background:#0b130d;overflow:hidden}.bar-fill{height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg,#73cf83,#d8f5a7);transition:width .3s ease}.scale{margin:18px 26px 24px;padding:16px 18px;border:1px solid #2b3b2e;border-radius:15px;background:#0e1510}.scale h3{margin:0 0 11px;font-size:12px;color:#d8e3d9}.scale-list{display:flex;flex-wrap:wrap;gap:8px}.chip{padding:7px 10px;border:1px solid #314235;border-radius:999px;color:#aebcaf;font-size:11px;font-weight:700}.chip.active{border-color:#76cf85;background:#203b25;color:#d6f6d7}.message{min-height:19px;margin:0 26px 22px;color:#ffb4a8;font-size:12px}.footer{text-align:center;margin-top:20px;color:#738177;font-size:11px}
+    @media(max-width:600px){.topbar{height:64px;padding:0 14px}.brand{font-size:19px}.back{padding:8px 10px;font-size:11px}main{padding:38px 0 50px}.intro p{font-size:13px}.card-head{padding:18px}.fields{grid-template-columns:1fr;gap:14px;padding:18px}.result{margin:0 18px 18px;padding:18px}.scale{margin:16px 18px 18px}.message{margin:0 18px 18px}}
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="https://koale.netlify.app/" aria-label="Koale — portal"><span class="mark">🐨</span><span class="brand-name">koale<span>.</span></span></a>
+    <a class="back" href="https://koale.netlify.app/">← Portal Koale</a>
+  </header>
+  <main>
+    <section class="intro">
+      <div class="eyebrow">Koale · Przydatne narzędzie</div>
+      <h1>Procentownik</h1>
+      <p>Wpisz liczbę zdobytych punktów i maksymalną liczbę punktów. Od razu sprawdzisz swój procent i ocenę.</p>
+    </section>
+    <section class="card" aria-labelledby="formTitle">
+      <div class="card-head"><h2 id="formTitle">Policz swój wynik</h2><p>Wpisz punkty z pracy, kartkówki lub sprawdzianu.</p></div>
+      <div class="fields">
+        <div class="field"><label for="earned">Zdobyte punkty</label><div class="input-wrap"><input id="earned" type="number" min="0" step="any" inputmode="decimal" placeholder="np. 18" autocomplete="off"><span class="suffix">pkt</span></div><p class="hint">Ile punktów udało Ci się zdobyć?</p></div>
+        <div class="field"><label for="maximum">Maksymalna liczba punktów</label><div class="input-wrap"><input id="maximum" type="number" min="0.01" step="any" inputmode="decimal" placeholder="np. 24" autocomplete="off"><span class="suffix">pkt</span></div><p class="hint">Jaka była maksymalna liczba punktów?</p></div>
+      </div>
+      <div class="result" aria-live="polite">
+        <div class="result-top"><div><div class="result-label">Twój wynik</div><div class="percent" id="percent">—%</div><p class="status" id="gradeText">Wpisz punkty, aby zobaczyć ocenę.</p></div><div class="grade" id="grade" aria-label="Ocena">—</div></div>
+        <div class="bar" role="progressbar" aria-label="Procent zdobytych punktów" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="bar-fill" id="barFill"></div></div>
+      </div>
+      <div class="scale"><h3>Używana skala ocen</h3><div class="scale-list" id="scaleList"><span class="chip">1 · poniżej 30%</span><span class="chip">2 · od 30%</span><span class="chip">3 · od 50%</span><span class="chip">4 · od 75%</span><span class="chip">5 · od 90%</span><span class="chip">6 · od 100%</span></div></div>
+      <p class="message" id="message" role="alert"></p>
+    </section>
+    <div class="footer">Koale · Procentownik</div>
+  </main>
+  <script>
+    const earnedInput = document.getElementById('earned');
+    const maximumInput = document.getElementById('maximum');
+    const percentOutput = document.getElementById('percent');
+    const gradeOutput = document.getElementById('grade');
+    const gradeText = document.getElementById('gradeText');
+    const barFill = document.getElementById('barFill');
+    const bar = document.querySelector('.bar');
+    const message = document.getElementById('message');
+    const chips = [...document.querySelectorAll('.chip')];
+
+    function update() {
+      const earnedRaw = earnedInput.value.trim();
+      const maximumRaw = maximumInput.value.trim();
+      message.textContent = '';
+      chips.forEach(chip => chip.classList.remove('active'));
+      if (!earnedRaw || !maximumRaw) {
+        percentOutput.textContent = '—%'; gradeOutput.textContent = '—';
+        gradeText.textContent = 'Wpisz punkty, aby zobaczyć ocenę.';
+        barFill.style.width = '0%'; bar.setAttribute('aria-valuenow', '0');
+        return;
+      }
+      const earned = Number(earnedRaw.replace(',', '.'));
+      const maximum = Number(maximumRaw.replace(',', '.'));
+      if (!Number.isFinite(earned) || !Number.isFinite(maximum) || earned < 0 || maximum <= 0) {
+        percentOutput.textContent = '—%'; gradeOutput.textContent = '—';
+        gradeText.textContent = 'Sprawdź wpisane wartości.';
+        message.textContent = 'Zdobyte punkty nie mogą być ujemne, a maksymalna liczba musi być większa od zera.';
+        barFill.style.width = '0%'; bar.setAttribute('aria-valuenow', '0');
+        return;
+      }
+      const percentage = earned / maximum * 100;
+      const grade = percentage >= 100 ? 6 : percentage >= 90 ? 5 : percentage >= 75 ? 4 : percentage >= 50 ? 3 : percentage >= 30 ? 2 : 1;
+      const labels = {1:'Ocena niedostateczna',2:'Ocena dopuszczająca',3:'Ocena dostateczna',4:'Ocena dobra',5:'Ocena bardzo dobra',6:'Ocena celująca'};
+      percentOutput.textContent = `${percentage.toFixed(1).replace('.', ',')}%`;
+      gradeOutput.textContent = String(grade);
+      gradeOutput.setAttribute('aria-label', `Ocena ${grade}`);
+      gradeText.textContent = labels[grade];
+      const visiblePercent = Math.min(100, Math.max(0, percentage));
+      barFill.style.width = `${visiblePercent}%`;
+      bar.setAttribute('aria-valuenow', String(Math.round(visiblePercent)));
+      chips[grade - 1].classList.add('active');
+    }
+    earnedInput.addEventListener('input', update);
+    maximumInput.addEventListener('input', update);
+  </script>
+</body>
+</html>
