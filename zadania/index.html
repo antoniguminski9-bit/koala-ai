@@ -1065,13 +1065,6 @@ html.auth-failed body>*:not(#authTransition){visibility:hidden!important}
     </button>
 
     <button
-      id="navGry"
-      onclick="showPage('gry',this)"
-    >
-      🎮 Gry
-    </button>
-
-    <button
       id="navBug"
       onclick="showPage('zglosblad',this); renderMyBugReports()"
     >
@@ -1659,48 +1652,7 @@ onclick="askKoala()"
   </button>
 
 </div>
-<!-- ============================= -->
-<!-- GRY -->
-<!-- ============================= -->
-<section id="gry" class="page">
-  <div class="section-title">
-    <h2>🎮 Strefa gier</h2>
-    <p>Wybierz grę i graj bezpośrednio w zadania-koale.</p>
-  </div>
 
-  <div class="dino-game-panel games-hub">
-    <div class="games-picker-heading">
-      <span class="games-eyebrow">STREFA ROZRYWKI</span>
-      <h3>Na co masz ochotę?</h3>
-      <p>Wybierz jedną z gier poniżej.</p>
-    </div>
-    <div class="games-choice-grid" role="group" aria-label="Wybór gry">
-      <button type="button" class="game-choice active" id="chooseDino" onclick="selectGame('dino')" aria-pressed="true">
-        <span class="game-choice-icon">🐨</span>
-        <span class="game-choice-name">Koala Hop</span>
-        <span class="game-choice-desc">Przeskakuj przeszkody koalą</span>
-        <span class="game-choice-cta">Graj teraz <span aria-hidden="true">→</span></span>
-      </button>
-      <button type="button" class="game-choice" id="chooseSnake" onclick="selectGame('snake')" aria-pressed="false">
-        <span class="game-choice-icon">🌿</span>
-        <span class="game-choice-name">Koala Eucalyptus</span>
-        <span class="game-choice-desc">Zbieraj liście eukaliptusa</span>
-        <span class="game-choice-cta">Graj teraz <span aria-hidden="true">→</span></span>
-      </button>
-    </div>
-
-    <div class="active-game-bar">
-      <div class="active-game-title">
-        <span id="activeGameIcon">🐨</span>
-        <div><h3 id="activeGameName">Koala Hop</h3><p id="activeGameHint">Spacja lub strzałka ↑ — skok. Na telefonie dotknij gry.</p></div>
-      </div>
-    </div>
-    <div class="dino-frame-wrap games-frame-wrap">
-      <iframe id="dinoGameFrame" src="about:blank" title="Gra Koala Hop" loading="lazy" allow="fullscreen" referrerpolicy="no-referrer"></iframe>
-    </div>
-    <p class="dino-help" id="gameFrameHelp">Zbieraj listki eukaliptusa, omijaj przeszkody i pobij swój rekord!</p>
-  </div>
-</section>
 
 </main>
 
@@ -1915,7 +1867,7 @@ function showPage(page, button) {
     updateChatUnreadDot();
   }
 
-  if (role === "guest" && page !== "zadania" && page !== "plan" && page !== "gry") {
+  if (role === "guest" && page !== "zadania" && page !== "plan") {
     setStatus(
       "loginStatus",
       "🔒 Ta sekcja wymaga zalogowania."
@@ -2407,7 +2359,6 @@ function updateAccess() {
   const userArea = document.getElementById("userArea");
   const userInfo = document.getElementById("userInfo");
   const guestBackLogin = document.getElementById("guestBackLogin");
-  const navGry = document.getElementById("navGry");
   const maintenanceButton = document.getElementById("maintenanceButton");
   if (maintenanceButton) {
     const isSadmin = String(role || "").trim().toLowerCase() === "sadmin";
@@ -2415,7 +2366,6 @@ function updateAccess() {
     maintenanceButton.style.display = isSadmin ? "inline-block" : "none";
   }
   if (guestBackLogin) guestBackLogin.classList.toggle("hidden", role !== "guest");
-  if (navGry) navGry.classList.remove("hidden");
   const navAccounts = document.getElementById("navAccounts");
   if (navAccounts) navAccounts.classList.toggle("hidden", role !== "sadmin");
 
@@ -5295,109 +5245,7 @@ document.addEventListener(
 
 
 
-/* Wbudowana gra Dino — działa bez zewnętrznego iframe */
-const embeddedDinoHTML = `<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#101827;color:#f8fafc;overflow:hidden}body{display:flex;align-items:center;justify-content:center;padding:10px}.game{width:min(100%,940px);display:flex;flex-direction:column;gap:9px}.top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.title{font-weight:950;font-size:clamp(18px,4vw,25px);letter-spacing:-.03em}.stats{display:flex;gap:7px;flex-wrap:wrap}.pill{background:#202e42;border:1px solid #34445b;border-radius:12px;padding:7px 11px;font-weight:850;color:#dbeafe}.pill b{color:#a7f3d0}.board{position:relative;width:100%;height:clamp(175px,29vw,285px);border:1px solid #34445b;border-radius:17px;overflow:hidden;background:#16243a;box-shadow:inset 0 1px 0 #ffffff0c,0 8px 24px #0002}canvas{display:block;width:100%;height:100%;touch-action:manipulation}.overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:#0b1220d9;backdrop-filter:blur(5px);padding:14px}.overlay strong{font-size:clamp(21px,4vw,30px);color:#f8fafc}.overlay span{margin-top:6px;color:#cbd5e1;line-height:1.4;max-width:440px}.actions{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}button{font:inherit;font-weight:850;border:1px solid #ffffff16;border-radius:12px;padding:9px 15px;background:linear-gradient(135deg,#86efac,#34d399);color:#09251b;cursor:pointer;touch-action:manipulation;box-shadow:0 5px 16px #34d39920}button:focus-visible{outline:3px solid #a7f3d0;outline-offset:2px}button:active{transform:translateY(1px)}.secondary{background:#26364c;border-color:#3b4c63;color:#f8fafc;box-shadow:none}.help{text-align:center;font-size:12px;color:#a9b7c9;margin:0}.hint{color:#a7f3d0;font-weight:750}.leaderboard{background:#172438;border:1px solid #34445b;border-radius:12px;padding:9px 12px;color:#e2e8f0}.leaderboard h3{margin:0 0 5px;font-size:14px}.leaderboard table{width:100%;border-collapse:collapse;font-size:12px}.leaderboard th,.leaderboard td{text-align:left;padding:3px 6px;border-bottom:1px solid #34445b}.leaderboard th:last-child,.leaderboard td:last-child{text-align:right}.leaderboard .empty{color:#94a3b8;text-align:center}
-/* Logowanie odbywa się w hubie Koale. */ .login-screen{display:none!important}</style></head><body><main class="game"><div class="top"><div class="title">🐨 Koala Hop <span class="hint">• Leśna przygoda</span></div><div class="stats"><div class="pill">WYNIK <span id="score">0</span></div><div class="pill">🍃 LISTKI <b id="leaves">0</b></div><div class="pill">🏆 REKORD <span id="best">0</span></div></div></div><div class="board" id="board"><canvas id="canvas"></canvas><div class="overlay" id="overlay"><strong>Wyruszamy do eukaliptusowego lasu?</strong><span>Przeskakuj pnie, omijaj kamienie i zbieraj listki. Spacja, ↑, W lub dotknięcie ekranu — skok.</span><div class="actions" style="margin-top:13px"><button id="start">▶ Rozpocznij przygodę</button></div></div></div><div class="actions"><button id="jump">⬆ Skok</button><button id="restart" class="secondary">↻ Od nowa</button><button id="pause" class="secondary">Ⅱ Pauza</button></div><p class="help">Sterowanie: spacja / ↑ / W / dotknij planszy. Zbieraj 🍃 — czasem pojawiają się bonusowe listki!</p><section class="leaderboard"><h3>🏆 Tabela wyników — Koala Hop</h3><table><thead><tr><th>Miejsce</th><th>Gracz</th><th>Wynik</th></tr></thead><tbody id="leaderRows"><tr><td colspan="3" class="empty">Brak wyników</td></tr></tbody></table><p class="personal-record" id="personalRecord" style="margin:8px 0 0;padding:8px;border-radius:9px;background:#20344a;color:#a7f3d0;font-weight:800">🔒 Twój rekord: 0</p></section></main><script>
-(()=>{
-const c=document.getElementById('canvas'),ctx=c.getContext('2d'),board=document.getElementById('board'),overlay=document.getElementById('overlay'),scoreEl=document.getElementById('score'),leavesEl=document.getElementById('leaves'),bestEl=document.getElementById('best');
-let W=800,H=250,koala,obstacles=[],leafItems=[],score=0,leaves=0,speed=4.7,running=false,dead=false,paused=false,frame=0,raf=0,lastSpawn=0,lastLeaf=0,world=0,clouds=[],best=0;
-const playerName=__PLAYER_NAME__;const sheetsUrl=__SHEETS_URL__;const gameKey='hop';
-function getToken(){try{return parent.sessionStorage.getItem('koale_apps_script_token')||parent.localStorage.getItem('koale_apps_script_token')||''}catch(e){try{return sessionStorage.getItem('koale_apps_script_token')||localStorage.getItem('koale_apps_script_token')||''}catch(x){return ''}}}
-function requestBoard(scoreValue){const token=getToken();const body=document.getElementById('leaderRows');if(!token){if(body)body.innerHTML='<tr><td colspan="3" class="empty">Zaloguj się, aby zobaczyć ranking.</td></tr>';return}const callbackName='koalaGame_'+Date.now()+'_'+Math.floor(Math.random()*100000);const script=document.createElement('script');let done=false;const cleanup=()=>{if(script.parentNode)script.parentNode.removeChild(script);try{delete window[callbackName]}catch(e){window[callbackName]=undefined}};const timer=setTimeout(()=>{if(done)return;done=true;cleanup();if(body)body.innerHTML='<tr><td colspan="3" class="empty">Nie udało się pobrać rankingu.</td></tr>'},10000);window[callbackName]=result=>{if(done)return;done=true;clearTimeout(timer);cleanup();if(!result||!result.success){if(body)body.innerHTML='<tr><td colspan="3" class="empty">'+((result&&result.error)||'Błąd rankingu.')+'</td></tr>';return}const rows=result.top10||[];if(body)body.innerHTML=rows.length?rows.map((r,i)=>'<tr><td>'+(i+1)+'</td><td>'+String(r.name||'Gracz').replace(/[&<>\"']/g,'')+'</td><td>'+Number(r.score||0)+'</td></tr>').join(''):'<tr><td colspan="3" class="empty">Brak wyników — zagraj, aby się wpisać!</td></tr>';const personal=document.getElementById('personalRecord');if(personal)personal.textContent=result.personalBest===null?'🔒 Zaloguj się na konto, aby zobaczyć swój rekord.':'🔒 Twój rekord ('+String(result.user||playerName)+'): '+Number(result.personalBest||0);if(typeof scoreValue==='number'&&scoreValue!==null)requestBoard(null)};const params={action:typeof scoreValue==='number'?'submitGameScore':'gameLeaderboard',game:gameKey,token:token,callback:callbackName};if(typeof scoreValue==='number')params.score=String(Math.floor(scoreValue));script.onerror=()=>{if(done)return;done=true;clearTimeout(timer);cleanup();if(body)body.innerHTML='<tr><td colspan="3" class="empty">Błąd połączenia z rankingiem.</td></tr>'};script.src=sheetsUrl+'?'+Object.keys(params).map(k=>encodeURIComponent(k)+'='+encodeURIComponent(params[k])).join('&')+'&_='+Date.now();document.head.appendChild(script)}
-function renderLeaderboard(){requestBoard(null)}function saveLeaderboard(scoreValue){requestBoard(Number(scoreValue))}
-renderLeaderboard();let lastSeenToken=getToken();setInterval(()=>{const nowToken=getToken();if(nowToken&&nowToken!==lastSeenToken){lastSeenToken=nowToken;renderLeaderboard()}else if(!nowToken&&lastSeenToken){lastSeenToken='';const body=document.getElementById('leaderRows');if(body)body.innerHTML='<tr><td colspan="3" class="empty">Zaloguj się, aby zobaczyć ranking.</td></tr>'}},1500);try{best=Number(localStorage.getItem('koalaHopBest')||0)}catch(e){} bestEl.textContent=best;
-const ground=()=>H-31;
-function resize(){const r=board.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2);W=Math.max(300,r.width);H=Math.max(175,r.height);c.width=Math.floor(W*dpr);c.height=Math.floor(H*dpr);ctx.setTransform(c.width/W,0,0,c.height/H,0,0);if(!koala)koala={y:ground(),vy:0};else if(koala.y>ground())koala.y=ground();clouds=[{x:W*.18,y:H*.19,s:1},{x:W*.53,y:H*.12,s:.72},{x:W*.82,y:H*.23,s:.9}];draw()}
-function reset(){koala={y:ground(),vy:0,blink:0};obstacles=[];leafItems=[];score=0;leaves=0;speed=4.7;running=false;dead=false;paused=false;frame=0;world=0;lastSpawn=0;lastLeaf=0;scoreEl.textContent='0';leavesEl.textContent='0';overlay.style.display='flex';overlay.querySelector('strong').textContent='Wyruszamy do eukaliptusowego lasu?';overlay.querySelector('span').textContent='Przeskakuj pnie, omijaj kamienie i zbieraj listki. Spacja, ↑, W lub dotknięcie ekranu — skok.';document.getElementById('start').textContent='▶ Rozpocznij przygodę';document.getElementById('pause').textContent='Ⅱ Pauza';if(raf)cancelAnimationFrame(raf);draw()}
-function start(){if(dead)reset();if(running)return;running=true;paused=false;overlay.style.display='none';document.getElementById('pause').textContent='Ⅱ Pauza';raf=requestAnimationFrame(loop)}
-function jump(){if(dead){reset();start();return}if(!running){start();koala.vy=-10.8;return}if(koala.y>=ground()-.7)koala.vy=-10.8;else if(!koala.double){koala.vy=-8.6;koala.double=true;}}
-function end(){running=false;dead=true;overlay.style.display='flex';overlay.querySelector('strong').textContent='Koniec przygody! 🐨';overlay.querySelector('span').textContent='Wynik: '+Math.floor(score)+' • Zebrane listki: '+leaves+'. Spróbuj jeszcze raz i pobij rekord!';document.getElementById('start').textContent='↻ Zagraj ponownie';if(Math.floor(score)>best){best=Math.floor(score);bestEl.textContent=best;try{localStorage.setItem('koalaHopBest',best)}catch(e){}}saveLeaderboard(Math.floor(score));}
-function roundedRect(x,y,w,h,r,color){ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill()}
-function drawKoala(){const x=58,y=koala.y-39,bob=running&&koala.y>=ground()-.5?Math.sin(frame*.42)*1.7:0;ctx.save();ctx.translate(x,y+bob);
-// shadow
-ctx.fillStyle='#07111d55';ctx.beginPath();ctx.ellipse(21,43,20,4,0,0,Math.PI*2);ctx.fill();
-// ears + pink inner ears
-ctx.fillStyle='#7f91a4';ctx.beginPath();ctx.arc(7,10,10,0,Math.PI*2);ctx.arc(34,10,10,0,Math.PI*2);ctx.fill();ctx.fillStyle='#f5b5c9';ctx.beginPath();ctx.arc(7,10,5,0,Math.PI*2);ctx.arc(34,10,5,0,Math.PI*2);ctx.fill();
-// body and head
-ctx.fillStyle='#93a4b7';ctx.beginPath();ctx.ellipse(21,30,13,14,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#b9c6d4';ctx.beginPath();ctx.arc(21,17,16,0,Math.PI*2);ctx.fill();ctx.fillStyle='#e6edf4';ctx.beginPath();ctx.ellipse(21,26,10,8,0,0,Math.PI*2);ctx.fill();
-// eyes + nose
-ctx.fillStyle='#182334';ctx.beginPath();ctx.arc(15,16,2,0,Math.PI*2);ctx.arc(27,16,2,0,Math.PI*2);ctx.fill();ctx.fillStyle='#273449';ctx.beginPath();ctx.ellipse(21,22,4.2,5.2,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(22,20,1.2,0,Math.PI*2);ctx.fill();
-// arms, feet, eucalyptus leaf backpack
-ctx.strokeStyle='#64788d';ctx.lineWidth=5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(11,28);ctx.lineTo(5,34);ctx.moveTo(31,28);ctx.lineTo(37,32);ctx.stroke();ctx.fillStyle='#4ade80';ctx.beginPath();ctx.ellipse(39,27,4,8,-.7,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#166534';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(36,31);ctx.lineTo(42,23);ctx.stroke();
-ctx.fillStyle='#596d83';const step=running&&koala.y>=ground()-.5?Math.floor(frame/5)%2:0;ctx.fillRect(10,38,9,5);ctx.fillRect(step?25:27,step?37:38,9,5);if(koala.y<ground()-.5){ctx.fillRect(8,36,9,4);ctx.fillRect(27,36,9,4)}ctx.restore();}
-function drawLeaf(l){ctx.save();ctx.translate(l.x,l.y);ctx.rotate(Math.sin(frame*.08+l.phase)*.18);ctx.fillStyle=l.bonus?'#fde68a':'#86efac';ctx.beginPath();ctx.ellipse(0,0,l.bonus?7:6,l.bonus?11:9,-.55,0,Math.PI*2);ctx.fill();ctx.strokeStyle=l.bonus?'#b45309':'#166534';ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(-3,5);ctx.lineTo(3,-5);ctx.stroke();if(l.bonus){ctx.fillStyle='#fff7ed';ctx.font='10px sans-serif';ctx.fillText('✦',-3,-12)}ctx.restore()}
-function drawObstacle(o){if(o.type==='log'){roundedRect(o.x,o.y+o.h*.45,o.w,o.h*.55,5,'#986b4a');ctx.fillStyle='#c99567';ctx.beginPath();ctx.ellipse(o.x+o.w-4,o.y+o.h*.72,4,o.h*.18,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#70472f';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(o.x+o.w-4,o.y+o.h*.72,2,o.h*.1,0,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#8abf75';ctx.beginPath();ctx.ellipse(o.x+o.w*.28,o.y+o.h*.42,o.w*.28,o.h*.3,-.4,0,Math.PI*2);ctx.fill()}else if(o.type==='rock'){ctx.fillStyle='#8494a5';ctx.beginPath();ctx.moveTo(o.x,o.y+o.h);ctx.lineTo(o.x+o.w*.12,o.y+o.h*.42);ctx.lineTo(o.x+o.w*.48,o.y);ctx.lineTo(o.x+o.w*.83,o.y+.15*o.h);ctx.lineTo(o.x+o.w,o.y+o.h);ctx.closePath();ctx.fill();ctx.fillStyle='#b8c4d0';ctx.beginPath();ctx.moveTo(o.x+o.w*.25,o.y+o.h*.45);ctx.lineTo(o.x+o.w*.48,o.y+o.h*.13);ctx.lineTo(o.x+o.w*.58,o.y+o.h*.45);ctx.closePath();ctx.fill()}else{ctx.fillStyle='#4f9b69';ctx.beginPath();ctx.ellipse(o.x+o.w*.35,o.y+o.h*.55,o.w*.36,o.h*.45,-.5,0,Math.PI*2);ctx.ellipse(o.x+o.w*.7,o.y+o.h*.43,o.w*.31,o.h*.4,.5,0,Math.PI*2);ctx.fill();ctx.fillStyle='#86c87c';ctx.beginPath();ctx.ellipse(o.x+o.w*.42,o.y+o.h*.45,3,6,-.7,0,Math.PI*2);ctx.fill()}}
-function draw(){if(!ctx)return;ctx.clearRect(0,0,W,H);const sky=ctx.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#203956');sky.addColorStop(.68,'#b5d9d0');sky.addColorStop(1,'#d7e7ca');ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
-// warm sun and drifting clouds
-ctx.fillStyle='#fde68a';ctx.globalAlpha=.85;ctx.beginPath();ctx.arc(W*.82,H*.2,17,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;clouds.forEach((cl,i)=>{const cx=((cl.x-world*(.12+i*.04))%(W+100)+W+100)%(W+100)-30;ctx.fillStyle='#ffffffa8';ctx.beginPath();ctx.ellipse(cx,cl.y,19*cl.s,7*cl.s,0,0,Math.PI*2);ctx.ellipse(cx+14*cl.s,cl.y-4*cl.s,13*cl.s,9*cl.s,0,0,Math.PI*2);ctx.ellipse(cx+27*cl.s,cl.y,16*cl.s,7*cl.s,0,0,Math.PI*2);ctx.fill()});
-// layered eucalyptus forest
-for(let layer=0;layer<2;layer++){const spacing=layer?115:165,shift=world*(layer?.32:.18);for(let i=-1;i<W/spacing+2;i++){const xx=((i*spacing-shift)%(W+spacing)+W+spacing)%(W+spacing)-spacing*.3;const th=(layer?34:51)+((i*17+31)%23);ctx.fillStyle=layer?'#6b9e88':'#497c72';ctx.fillRect(xx,ground()-th,5,th);ctx.beginPath();ctx.ellipse(xx-5,ground()-th+7,10,17,-.5,0,Math.PI*2);ctx.ellipse(xx+9,ground()-th+18,10,16,.6,0,Math.PI*2);ctx.fill()}}
-ctx.fillStyle='#769c67';ctx.fillRect(0,ground(),W,H-ground());ctx.fillStyle='#a4c77e';ctx.fillRect(0,ground(),W,4);ctx.strokeStyle='#d5edb4';ctx.globalAlpha=.65;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(0,ground()+9);ctx.lineTo(W,ground()+9);ctx.stroke();ctx.globalAlpha=1;
-for(let i=0;i<12;i++){const xx=((i*93-world*.95)%(W+30)+W+30)%(W+30);ctx.fillStyle=i%2?'#3d805d':'#b0d77b';ctx.beginPath();ctx.ellipse(xx,ground()+14,5,2,-.4,0,Math.PI*2);ctx.fill()}
-leafItems.forEach(drawLeaf);obstacles.forEach(drawObstacle);drawKoala();}
-function spawnObstacle(){const types=['log','rock','bush'];const type=types[Math.floor(Math.random()*types.length)];const h=type==='log'?20+Math.random()*8:type==='rock'?20+Math.random()*13:25+Math.random()*10;const w=type==='log'?28+Math.random()*20:type==='rock'?18+Math.random()*14:24+Math.random()*15;obstacles.push({x:W+15,w,h,y:ground()-h,type})}
-function spawnLeaves(){const count=3+Math.floor(Math.random()*3),startX=W+30,baseY=ground()-(55+Math.random()*38);for(let i=0;i<count;i++)leafItems.push({x:startX+i*24,y:baseY+Math.sin(i*.85)*13,phase:Math.random()*5,bonus:Math.random()<.16})}
-function loop(){if(!running||paused)return;frame++;world+=speed;score+=.13+speed*.006;speed=Math.min(9.8,4.7+score/180);scoreEl.textContent=Math.floor(score);koala.vy+=.56;koala.y+=koala.vy;if(koala.y>=ground()){koala.y=ground();koala.vy=0;koala.double=false}
-if(frame-lastSpawn>Math.max(37,Math.floor(82-speed*3.2))){spawnObstacle();lastSpawn=frame}
-if(frame-lastLeaf>110+Math.random()*100){spawnLeaves();lastLeaf=frame}
-obstacles.forEach(o=>o.x-=speed);obstacles=obstacles.filter(o=>o.x+o.w>-10);leafItems.forEach(l=>l.x-=speed);leafItems=leafItems.filter(l=>l.x>-15);
-const kx=58,ky=koala.y-37,kw=39,kh=39;for(const o of obstacles){const ox=o.x+3,ow=o.w-6,oy=o.y+5,oh=o.h-5;if(kx+kw-5>ox&&kx+6<ox+ow&&ky+kh-3>oy&&ky+5<oy+oh){draw();end();return}}
-for(let i=leafItems.length-1;i>=0;i--){const l=leafItems[i];if(kx+39>l.x-8&&kx<l.x+8&&koala.y-45<l.y+10&&koala.y+4>l.y-10){leaves+=l.bonus?3:1;score+=l.bonus?18:7;leavesEl.textContent=leaves;scoreEl.textContent=Math.floor(score);leafItems.splice(i,1)}}draw();raf=requestAnimationFrame(loop)}
-document.getElementById('start').addEventListener('click',()=>{if(dead)reset();start()});document.getElementById('jump').addEventListener('click',jump);document.getElementById('restart').addEventListener('click',()=>{reset();start()});document.getElementById('pause').addEventListener('click',()=>{if(dead)return;if(!running){start();return}paused=!paused;if(paused){running=false;overlay.style.display='flex';overlay.querySelector('strong').textContent='Pauza ⏸';overlay.querySelector('span').textContent='Złap oddech — kliknij „Kontynuuj”, aby wrócić do lasu.';document.getElementById('start').textContent='▶ Kontynuuj';document.getElementById('pause').textContent='▶ Wznów';if(raf)cancelAnimationFrame(raf)}else{running=true;overlay.style.display='none';document.getElementById('pause').textContent='Ⅱ Pauza';raf=requestAnimationFrame(loop)}});
-board.addEventListener('pointerdown',e=>{if(e.target===overlay||e.target.closest('button'))return;jump()});window.addEventListener('keydown',e=>{if([' ','ArrowUp','w','W'].includes(e.key)){e.preventDefault();if(e.repeat)return;jump()}if((e.key==='p'||e.key==='P')&&!dead)document.getElementById('pause').click()});window.addEventListener('resize',resize);resize();reset();
-})();
-<\/script>
 
-
-</body></html>`;
-
-/* Wbudowana gra Koala Eucalyptus oraz przełączanie gier */
-const embeddedSnakeHTML = `<!doctype html>
-<html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#101827;color:#f8fafc;overflow:hidden}body{display:flex;align-items:center;justify-content:center;padding:12px}.game{width:min(100%,680px);display:flex;flex-direction:column;gap:10px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{font-weight:800;font-size:clamp(18px,4vw,25px)}.score{background:#202e42;border:1px solid #34445b;padding:8px 13px;border-radius:12px;font-weight:800}.board{position:relative;width:100%;aspect-ratio:1.55;max-height:calc(100dvh - 155px);min-height:190px;background:#0b1220;border:2px solid #34445b;border-radius:16px;overflow:hidden;box-shadow:0 12px 32px #0005}canvas{display:block;width:100%;height:100%;touch-action:none}.overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:#0b1220d9;padding:18px}.overlay strong{font-size:clamp(22px,5vw,34px)}.overlay span{margin-top:7px;color:#cbd5e1}.actions{display:flex;justify-content:center;gap:9px;flex-wrap:wrap}button{font:inherit;font-weight:750;border:0;border-radius:12px;padding:10px 17px;background:#22c55e;color:#06220f;cursor:pointer;touch-action:manipulation}button.secondary{background:#26364c;color:#f8fafc}.controls{display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(2,43px);gap:5px;justify-content:center}.controls button{padding:0;font-size:20px;border:1px solid #3c4d63;background:#202e42;color:white}.controls .up{grid-column:2;grid-row:1}.controls .left{grid-column:1;grid-row:2}.controls .down{grid-column:2;grid-row:2}.controls .right{grid-column:3;grid-row:2}.help{text-align:center;font-size:12px;color:#a9b7c9;margin:0}.leaderboard{background:#172438;border:1px solid #34445b;border-radius:12px;padding:9px 12px;color:#e2e8f0}.leaderboard h3{margin:0 0 5px;font-size:14px}.leaderboard table{width:100%;border-collapse:collapse;font-size:12px}.leaderboard th,.leaderboard td{text-align:left;padding:3px 6px;border-bottom:1px solid #34445b}.leaderboard th:last-child,.leaderboard td:last-child{text-align:right}.leaderboard .empty{color:#94a3b8;text-align:center}.settings{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 12px;background:#202e42;border:1px solid #34445b;border-radius:12px}.settings label{font-weight:800}.settings select{max-width:100%;font:inherit;font-weight:700;color:#f8fafc;background:#101827;border:1px solid #52637a;border-radius:9px;padding:8px 10px}@media(max-width:430px){.settings{align-items:stretch}.settings select{width:100%}}@media(min-width:600px){.controls{grid-template-columns:repeat(4,52px);grid-template-rows:43px}.controls .up{grid-column:2;grid-row:1}.controls .left{grid-column:1;grid-row:1}.controls .down{grid-column:3;grid-row:1}.controls .right{grid-column:4;grid-row:1}}
-/* Logowanie odbywa się w hubie Koale. */ .login-screen{display:none!important}</style></head><body><main class="game"><div class="top"><div class="brand">🐨 Koala Eucalyptus</div><div class="score">Wynik: <span id="score">0</span></div></div><div id="speedSettings" class="settings" style="display:none"><label for="snakeSpeed">⚙️ Prędkość węża</label><select id="snakeSpeed"><option value="190">Spokojna</option><option value="125" selected>Normalna</option><option value="80">Szybka</option><option value="55">Bardzo szybka</option></select></div><div class="board" id="board"><canvas id="canvas" aria-label="Plansza gry Koala Eucalyptus"></canvas><div class="overlay" id="overlay"><strong>Gotowy do gry?</strong><span>Zbieraj liście eukaliptusa i nie uderz w ścianę ani w koalą kolejkę.</span><div class="actions" style="margin-top:16px"><button id="start">▶ Rozpocznij</button></div></div></div><div class="actions"><button id="restart" class="secondary">↻ Nowa gra</button><button id="pause" class="secondary">Ⅱ Pauza</button></div><div class="controls" aria-label="Sterowanie dotykowe"><button class="up" data-dir="up" aria-label="Góra">▲</button><button class="left" data-dir="left" aria-label="Lewo">◀</button><button class="down" data-dir="down" aria-label="Dół">▼</button><button class="right" data-dir="right" aria-label="Prawo">▶</button></div><p class="help">Sterowanie: strzałki / WASD, przyciski lub przesunięcie palcem po planszy.</p><section class="leaderboard"><h3>🏆 Tabela wyników — Koala Eucalyptus</h3><table><thead><tr><th>Miejsce</th><th>Gracz</th><th>Wynik</th></tr></thead><tbody id="leaderRows"><tr><td colspan="3" class="empty">Brak wyników</td></tr></tbody></table><p class="personal-record" id="personalRecord" style="margin:8px 0 0;padding:8px;border-radius:9px;background:#20344a;color:#a7f3d0;font-weight:800">🔒 Twój rekord: 0</p></section></main><script>
-(function(){const canvas=document.getElementById('canvas'),ctx=canvas.getContext('2d'),board=document.getElementById('board'),overlay=document.getElementById('overlay'),scoreEl=document.getElementById('score');const playerName=__PLAYER_NAME__;const sheetsUrl=__SHEETS_URL__;const gameKey='eucalyptus';
-function getToken(){try{return parent.sessionStorage.getItem('koale_apps_script_token')||parent.localStorage.getItem('koale_apps_script_token')||''}catch(e){try{return sessionStorage.getItem('koale_apps_script_token')||localStorage.getItem('koale_apps_script_token')||''}catch(x){return ''}}}
-function requestBoard(scoreValue){const token=getToken();const body=document.getElementById('leaderRows');if(!token){if(body)body.innerHTML='<tr><td colspan="3" class="empty">Zaloguj się, aby zobaczyć ranking.</td></tr>';return}const callbackName='koalaGame_'+Date.now()+'_'+Math.floor(Math.random()*100000);const script=document.createElement('script');let done=false;const cleanup=()=>{if(script.parentNode)script.parentNode.removeChild(script);try{delete window[callbackName]}catch(e){window[callbackName]=undefined}};const timer=setTimeout(()=>{if(done)return;done=true;cleanup();if(body)body.innerHTML='<tr><td colspan="3" class="empty">Nie udało się pobrać rankingu.</td></tr>'},10000);window[callbackName]=result=>{if(done)return;done=true;clearTimeout(timer);cleanup();if(!result||!result.success){if(body)body.innerHTML='<tr><td colspan="3" class="empty">'+((result&&result.error)||'Błąd rankingu.')+'</td></tr>';return}const rows=result.top10||[];if(body)body.innerHTML=rows.length?rows.map((r,i)=>'<tr><td>'+(i+1)+'</td><td>'+String(r.name||'Gracz').replace(/[&<>\"']/g,'')+'</td><td>'+Number(r.score||0)+'</td></tr>').join(''):'<tr><td colspan="3" class="empty">Brak wyników — zagraj, aby się wpisać!</td></tr>';const personal=document.getElementById('personalRecord');if(personal)personal.textContent=result.personalBest===null?'🔒 Zaloguj się na konto, aby zobaczyć swój rekord.':'🔒 Twój rekord ('+String(result.user||playerName)+'): '+Number(result.personalBest||0);if(typeof scoreValue==='number'&&scoreValue!==null)requestBoard(null)};const params={action:typeof scoreValue==='number'?'submitGameScore':'gameLeaderboard',game:gameKey,token:token,callback:callbackName};if(typeof scoreValue==='number')params.score=String(Math.floor(scoreValue));script.onerror=()=>{if(done)return;done=true;clearTimeout(timer);cleanup();if(body)body.innerHTML='<tr><td colspan="3" class="empty">Błąd połączenia z rankingiem.</td></tr>'};script.src=sheetsUrl+'?'+Object.keys(params).map(k=>encodeURIComponent(k)+'='+encodeURIComponent(params[k])).join('&')+'&_='+Date.now();document.head.appendChild(script)}
-function renderLeaderboard(){requestBoard(null)}function saveLeaderboard(scoreValue){requestBoard(Number(scoreValue))}
-renderLeaderboard();let lastSeenToken=getToken();setInterval(()=>{const nowToken=getToken();if(nowToken&&nowToken!==lastSeenToken){lastSeenToken=nowToken;renderLeaderboard()}else if(!nowToken&&lastSeenToken){lastSeenToken='';const body=document.getElementById('leaderRows');if(body)body.innerHTML='<tr><td colspan="3" class="empty">Zaloguj się, aby zobaczyć ranking.</td></tr>'}},1500);const cols=30,rows=18;let snake,dir,nextDir,food,score,running=false,over=false,timer=null,lastSwipe=null,speed=125;const settings=document.getElementById('speedSettings'),speedSelect=document.getElementById('snakeSpeed');function resize(){const r=board.getBoundingClientRect();const dpr=Math.min(window.devicePixelRatio||1,2);canvas.width=Math.max(1,Math.floor(r.width*dpr));canvas.height=Math.max(1,Math.floor(r.height*dpr));ctx.setTransform(canvas.width/cols,0,0,canvas.height/rows,0,0);draw()}function reset(){if(settings)settings.style.display='none';snake=[{x:8,y:9},{x:7,y:9},{x:6,y:9}];dir={x:1,y:0};nextDir={x:1,y:0};score=0;over=false;running=false;scoreEl.textContent='0';placeFood();overlay.style.display='flex';overlay.querySelector('strong').textContent='Gotowy do gry?';overlay.querySelector('span').textContent='Zbieraj liście eukaliptusa i nie uderz w ścianę ani w koalą kolejkę.';overlay.querySelector('button').textContent='▶ Rozpocznij';clearInterval(timer);draw()}function placeFood(){do{food={x:Math.floor(Math.random()*cols),y:Math.floor(Math.random()*rows)}}while(snake&&snake.some(p=>p.x===food.x&&p.y===food.y))}function draw(){if(!ctx)return;ctx.clearRect(0,0,cols,rows);ctx.fillStyle='#0b1220';ctx.fillRect(0,0,cols,rows);ctx.strokeStyle='#172438';ctx.lineWidth=.035;for(let x=0;x<cols;x++){for(let y=0;y<rows;y++){ctx.strokeRect(x,y,1,1)}}if(food){/* liść eukaliptusa */ctx.save();ctx.translate(food.x+.5,food.y+.5);ctx.rotate(-.55);ctx.fillStyle='#a3e635';ctx.beginPath();ctx.ellipse(0,0,.23,.38,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#4d7c0f';ctx.lineWidth=.055;ctx.beginPath();ctx.moveTo(-.18,.22);ctx.lineTo(.18,-.22);ctx.stroke();ctx.restore()}snake.forEach((p,i)=>{if(i===0){/* głowa koali */ctx.fillStyle='#94a3b8';ctx.beginPath();ctx.arc(p.x+.5,p.y+.5,.42,0,Math.PI*2);ctx.fill();ctx.fillStyle='#64748b';ctx.beginPath();ctx.arc(p.x+.14,p.y+.22,.19,0,Math.PI*2);ctx.arc(p.x+.86,p.y+.22,.19,0,Math.PI*2);ctx.fill();ctx.fillStyle='#f9a8d4';ctx.beginPath();ctx.arc(p.x+.14,p.y+.22,.09,0,Math.PI*2);ctx.arc(p.x+.86,p.y+.22,.09,0,Math.PI*2);ctx.fill();ctx.fillStyle='#0f172a';ctx.beginPath();ctx.arc(p.x+.36,p.y+.43,.045,0,Math.PI*2);ctx.arc(p.x+.64,p.y+.43,.045,0,Math.PI*2);ctx.fill();ctx.fillStyle='#334155';ctx.beginPath();ctx.ellipse(p.x+.5,p.y+.55,.11,.14,0,0,Math.PI*2);ctx.fill()}else{ctx.fillStyle=i%2?'#94a3b8':'#cbd5e1';ctx.beginPath();ctx.roundRect(p.x+.08,p.y+.08,.84,.84,.22);ctx.fill();ctx.fillStyle='#64748b';ctx.beginPath();ctx.arc(p.x+.25,p.y+.25,.11,0,Math.PI*2);ctx.arc(p.x+.75,p.y+.25,.11,0,Math.PI*2);ctx.fill()}})}function start(){if(over)reset();running=true;overlay.style.display='none';if(settings)settings.style.display='flex';clearInterval(timer);timer=setInterval(tick,speed)}function end(){running=false;over=true;clearInterval(timer);overlay.style.display='flex';overlay.querySelector('strong').textContent='Koniec gry!';overlay.querySelector('span').textContent='Twój wynik: '+score+'. Spróbuj jeszcze raz!';overlay.querySelector('button').textContent='↻ Zagraj ponownie';saveLeaderboard(score)}function tick(){dir=nextDir;const head={x:snake[0].x+dir.x,y:snake[0].y+dir.y};if(head.x<0||head.y<0||head.x>=cols||head.y>=rows||snake.some((p,i)=>i<snake.length-1&&p.x===head.x&&p.y===head.y)){end();return}snake.unshift(head);if(head.x===food.x&&head.y===food.y){score+=10;scoreEl.textContent=score;placeFood()}else snake.pop();draw()}function turn(d){if(d==='up'&&dir.y!==1)nextDir={x:0,y:-1};if(d==='down'&&dir.y!==-1)nextDir={x:0,y:1};if(d==='left'&&dir.x!==1)nextDir={x:-1,y:0};if(d==='right'&&dir.x!==-1)nextDir={x:1,y:0};if(!running&&!over){} }speedSelect.addEventListener('change',()=>{speed=Number(speedSelect.value)||125;if(running){clearInterval(timer);timer=setInterval(tick,speed)}});document.getElementById('start').addEventListener('click',start);document.getElementById('restart').addEventListener('click',()=>{reset();start()});document.getElementById('pause').addEventListener('click',()=>{if(running){running=false;clearInterval(timer);overlay.style.display='flex';overlay.querySelector('strong').textContent='Pauza';overlay.querySelector('span').textContent='Kliknij, aby kontynuować.';overlay.querySelector('button').textContent='▶ Kontynuuj'}else if(!over)start()});document.querySelectorAll('[data-dir]').forEach(b=>b.addEventListener('click',()=>turn(b.dataset.dir)));window.addEventListener('keydown',e=>{const k=e.key.toLowerCase(),map={arrowup:'up',w:'up',arrowdown:'down',s:'down',arrowleft:'left',a:'left',arrowright:'right',d:'right'};if(map[k]){e.preventDefault();turn(map[k])}if((k===' '||k==='enter')&&!running){e.preventDefault();start()}});board.addEventListener('touchstart',e=>{const t=e.changedTouches[0];lastSwipe={x:t.clientX,y:t.clientY}},{passive:true});board.addEventListener('touchend',e=>{if(!lastSwipe)return;const t=e.changedTouches[0],dx=t.clientX-lastSwipe.x,dy=t.clientY-lastSwipe.y;if(Math.max(Math.abs(dx),Math.abs(dy))>18)turn(Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up'));lastSwipe=null},{passive:true});window.addEventListener('resize',resize);reset();resize()})();
-<\/script></body></html>`;
-
-function selectGame(game) {
-  const games = {
-    dino: { name: 'Koala Hop', icon: '🐨', hint: 'Spacja, strzałka ↑ lub przycisk Skok.', url: '', title: 'Wbudowana gra Koala Hop', external: 'https://chromedino.com/' },
-    snake: { name: 'Koala Eucalyptus', icon: '🐨', hint: 'Steruj koalą strzałkami, WASD lub przyciskami pod planszą.', url: '', title: 'Wbudowana gra Koala Eucalyptus', external: 'https://snake.googlemaps.com/' }
-  };
-  const selected = games[game];
-  if (!selected) return;
-  const frame = document.getElementById('dinoGameFrame');
-  const name = document.getElementById('activeGameName');
-  const icon = document.getElementById('activeGameIcon');
-  const hint = document.getElementById('activeGameHint');
-  const help = document.getElementById('gameFrameHelp');
-  if (!frame || !name || !icon || !hint) return;
-  name.textContent = selected.name;
-  icon.textContent = selected.icon;
-  hint.textContent = selected.hint;
-  frame.title = selected.title;
-  if (game === 'snake') {
-    frame.removeAttribute('src');
-    frame.srcdoc = embeddedSnakeHTML.replace('__PLAYER_NAME__', JSON.stringify(currentUser && currentUser.name ? currentUser.name : 'Gość')).replace('__SHEETS_URL__', JSON.stringify(GOOGLE_SHEETS_URL));
-    if (help) help.textContent = 'Steruj koalą, zbieraj liście eukaliptusa i dopasuj prędkość w ustawieniach gry.';
-  } else {
-    frame.removeAttribute('src');
-    frame.srcdoc = embeddedDinoHTML.replace('__PLAYER_NAME__', JSON.stringify(currentUser && currentUser.name ? currentUser.name : 'Gość')).replace('__SHEETS_URL__', JSON.stringify(GOOGLE_SHEETS_URL));
-    if (help) help.textContent = 'Zbieraj listki eukaliptusa, omijaj pnie, kamienie i krzewy. Uważaj na bonusowe listki!';
-  }
-  ['dino', 'snake'].forEach(function(key) {
-    const button = document.getElementById(key === 'dino' ? 'chooseDino' : 'chooseSnake');
-    if (button) { const active = key === game; button.classList.toggle('active', active); button.setAttribute('aria-pressed', active ? 'true' : 'false'); }
-  });
-}
-
-// Uruchom od razu Koala Hop, bez zewnętrznej strony.
-selectGame('dino');
 
 </script>
 
