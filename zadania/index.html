@@ -901,11 +901,15 @@ footer {
 .auth-spinner{width:42px;height:42px;margin:0 auto 18px;border:4px solid #3b4c63;border-top-color:#86efac;border-radius:50%;animation:authSpin .8s linear infinite}
 .auth-check{display:none;width:46px;height:46px;margin:0 auto 14px;border-radius:50%;background:#34d399;color:#062418;font-size:30px;font-weight:900;line-height:46px}
 .auth-transition p{margin:0;font-size:20px;font-weight:750}
+.auth-back{display:none;margin:18px auto 0;width:42px;height:42px;border:1px solid #64748b;border-radius:50%;background:#26364c;color:#fff;font-size:24px;font-weight:800;line-height:1;cursor:pointer}
+.auth-back:hover{background:#3b4c63}
 @keyframes authSpin{to{transform:rotate(360deg)}}
 html.auth-pending #authTransition{display:flex!important}
 html.auth-pending body>*:not(#authTransition){visibility:hidden!important}
+html.auth-failed #authTransition{display:flex!important}
+html.auth-failed body>*:not(#authTransition){visibility:hidden!important}
 </style>
-<script>try{if(new URLSearchParams(location.hash.slice(1)).has("koale_auth")){document.documentElement.classList.add("auth-pending");window.__koaleAuthWatchdog=setTimeout(function(){document.documentElement.classList.remove("auth-pending");var login=document.getElementById("loginScreen"),status=document.getElementById("loginStatus");if(login)login.classList.remove("hidden");if(status)status.textContent="Nie udało się potwierdzić logowania z portalu. Wróć do Koale i spróbuj ponownie."},20000)}}catch(e){}</script>
+<script>try{if(new URLSearchParams(location.hash.slice(1)).has("koale_auth")){document.documentElement.classList.add("auth-pending");window.__koaleAuthWatchdog=setTimeout(function(){var root=document.documentElement;root.classList.remove("auth-pending");root.classList.add("auth-failed");var spinner=document.getElementById("authSpinner"),check=document.getElementById("authCheck"),text=document.getElementById("authTransitionText"),back=document.getElementById("authBackButton"),login=document.getElementById("loginScreen"),status=document.getElementById("loginStatus");if(spinner)spinner.style.display="none";if(check){check.style.display="block";check.textContent="×";check.style.background="#ef4444";check.style.color="#fff"}if(text)text.textContent="Logowanie trwa zbyt długo";if(back)back.style.display="block";if(login)login.classList.remove("hidden");if(status)status.textContent="Nie udało się potwierdzić logowania. Kliknij ×, aby wrócić do Koale."},20000)}}catch(e){}</script>
 </head>
 
 <body>
@@ -914,6 +918,7 @@ html.auth-pending body>*:not(#authTransition){visibility:hidden!important}
     <div id="authSpinner" class="auth-spinner"></div>
     <div id="authCheck" class="auth-check">✓</div>
     <p id="authTransitionText">Logowanie...</p>
+    <button id="authBackButton" class="auth-back" type="button" aria-label="Wróć do Koale" title="Wróć do Koale">×</button>
   </div>
 </div>
 
@@ -5152,9 +5157,10 @@ function renderAll() {
    ========================================================= */
 
 function finishPortalHandoff(success) {
-  if (window.__koaleAuthWatchdog) { clearTimeout(window.__koaleAuthWatchdog); window.__koaleAuthWatchdog = null; }
   const root = document.documentElement;
-  if (!root.classList.contains("auth-pending")) return;
+  if (success && window.__koaleAuthWatchdog) { clearTimeout(window.__koaleAuthWatchdog); window.__koaleAuthWatchdog = null; }
+  if (success) root.classList.remove("auth-failed");
+  if (!root.classList.contains("auth-pending") && !root.classList.contains("auth-failed")) return;
   const spinner = document.getElementById("authSpinner");
   const check = document.getElementById("authCheck");
   const text = document.getElementById("authTransitionText");
@@ -5167,6 +5173,9 @@ function finishPortalHandoff(success) {
   if (text) text.textContent = success ? "Zalogowano" : "Nie udało się zalogować";
   window.setTimeout(() => root.classList.remove("auth-pending"), success ? 700 : 1000);
 }
+document.getElementById("authBackButton")?.addEventListener("click", () => {
+  location.href = "https://koale.netlify.app/";
+});
 
 async function renderAccounts() {
   const list = document.getElementById("accountsList");
