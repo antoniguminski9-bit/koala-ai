@@ -76,7 +76,8 @@ const GAME_META = {
 };
 function decodeGame(encoded) {
   const bytes = Uint8Array.from(atob(encoded), char => char.charCodeAt(0));
-  return new TextDecoder().decode(bytes);
+  const html = new TextDecoder().decode(bytes);
+  return html.replaceAll("<" + String.fromCharCode(92) + "/script>", "</script>");
 }
 function readKoaleProfile() {
   const prefix = '#koale_auth=';
