@@ -37,7 +37,7 @@
         <div class="result-top"><div><div class="result-label">Twój wynik</div><div class="percent" id="percent">—%</div><p class="status" id="gradeText">Wpisz punkty, aby zobaczyć ocenę.</p></div><div class="grade" id="grade" aria-label="Ocena">—</div></div>
         <div class="bar" role="progressbar" aria-label="Procent zdobytych punktów" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="bar-fill" id="barFill"></div></div>
       </div>
-      <div class="scale"><h3>Używana skala ocen</h3><div class="scale-list" id="scaleList"><span class="chip">1 · poniżej 30%</span><span class="chip">2 · od 30%</span><span class="chip">3 · od 50%</span><span class="chip">4 · od 75%</span><span class="chip">5 · od 90%</span><span class="chip">6 · od 100%</span></div></div>
+      <div class="scale"><h3>Używana skala ocen</h3><div class="scale-list" id="scaleList"><span class="chip">1 · 0–29%</span><span class="chip">2 · 30–50%</span><span class="chip">3 · 51–74%</span><span class="chip">4 · 75–89%</span><span class="chip">5 · 90–97%</span><span class="chip">6 · 98–100%</span></div></div>
       <p class="message" id="message" role="alert"></p>
     </section>
     <div class="footer">Koale · Procentownik</div>
@@ -74,7 +74,7 @@
         return;
       }
       const percentage = earned / maximum * 100;
-      const grade = percentage >= 100 ? 6 : percentage >= 90 ? 5 : percentage >= 75 ? 4 : percentage >= 50 ? 3 : percentage >= 30 ? 2 : 1;
+      const grade = percentage >= 98 ? 6 : percentage >= 90 ? 5 : percentage >= 75 ? 4 : percentage >= 51 ? 3 : percentage >= 30 ? 2 : 1;
       const labels = {1:'Ocena niedostateczna',2:'Ocena dopuszczająca',3:'Ocena dostateczna',4:'Ocena dobra',5:'Ocena bardzo dobra',6:'Ocena celująca'};
       percentOutput.textContent = `${percentage.toFixed(1).replace('.', ',')}%`;
       gradeOutput.textContent = String(grade);
