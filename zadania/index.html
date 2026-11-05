@@ -1022,6 +1022,15 @@ html.auth-failed body>*:not(#authTransition){visibility:hidden!important}
   <nav>
 
     <button
+      id="navBackToHub"
+      type="button"
+      onclick="returnToKoaleHub()"
+      title="Wróć do Koale"
+    >
+      ← Powrót do Koale
+    </button>
+
+    <button
       id="navZadania"
       class="active"
       onclick="showPage('zadania',this)"
@@ -5172,6 +5181,17 @@ function finishPortalHandoff(success) {
   }
   if (text) text.textContent = success ? "Zalogowano" : "Nie udało się zalogować";
   window.setTimeout(() => root.classList.remove("auth-pending"), success ? 700 : 1000);
+}
+
+function returnToKoaleHub() {
+  const hubOrigin = "https://koale.netlify.app";
+  try {
+    if (document.referrer && new URL(document.referrer).origin === hubOrigin && history.length > 1) {
+      history.back();
+      return;
+    }
+  } catch (error) {}
+  location.href = hubOrigin + "/";
 }
 
 async function renderAccounts() {
