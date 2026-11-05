@@ -1022,15 +1022,6 @@ html.auth-failed body>*:not(#authTransition){visibility:hidden!important}
   <nav>
 
     <button
-      id="navBackToHub"
-      type="button"
-      onclick="returnToKoaleHub()"
-      title="Wróć do Koale"
-    >
-      ← Powrót do Koale
-    </button>
-
-    <button
       id="navZadania"
       class="active"
       onclick="showPage('zadania',this)"
@@ -1101,6 +1092,7 @@ html.auth-failed body>*:not(#authTransition){visibility:hidden!important}
 
   <div id="userArea" class="user-area hidden">
     <div id="userInfo" class="user-info"></div>
+    <button type="button" id="backToHubButton" class="logout-btn" onclick="returnToKoaleHub()">⬅️ Wróć do Koale</button>
     <button type="button" id="maintenanceButton" class="logout-btn hidden" onclick="showMaintenancePage()">🔧 Przerwa techniczna</button>
     <button class="logout-btn" onclick="logout()">🚪 Wyloguj</button>
   </div>
