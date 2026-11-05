@@ -901,7 +901,7 @@ footer {
 .auth-spinner{width:42px;height:42px;margin:0 auto 18px;border:4px solid #3b4c63;border-top-color:#86efac;border-radius:50%;animation:authSpin .8s linear infinite}
 .auth-check{display:none;width:46px;height:46px;margin:0 auto 14px;border-radius:50%;background:#34d399;color:#062418;font-size:30px;font-weight:900;line-height:46px}
 .auth-transition p{margin:0;font-size:20px;font-weight:750}
-.auth-back{display:none;margin:18px auto 0;width:42px;height:42px;border:1px solid #64748b;border-radius:50%;background:#26364c;color:#fff;font-size:24px;font-weight:800;line-height:1;cursor:pointer}
+.auth-back{display:none;margin:18px auto 0;width:42px;height:42px;border:1px solid #64748b;border-radius:50%;background:#26364c;color:#fff;font-size:24px;font-weight:800;line-height:40px;text-align:center;text-decoration:none;cursor:pointer;pointer-events:auto;position:relative;z-index:2}
 .auth-back:hover{background:#3b4c63}
 @keyframes authSpin{to{transform:rotate(360deg)}}
 html.auth-pending #authTransition{display:flex!important}
@@ -918,7 +918,7 @@ html.auth-failed body>*:not(#authTransition){visibility:hidden!important}
     <div id="authSpinner" class="auth-spinner"></div>
     <div id="authCheck" class="auth-check">✓</div>
     <p id="authTransitionText">Logowanie...</p>
-    <button id="authBackButton" class="auth-back" type="button" aria-label="Wróć do Koale" title="Wróć do Koale">×</button>
+    <a id="authBackButton" class="auth-back" href="https://koale.netlify.app/" aria-label="Wróć do Koale" title="Wróć do Koale">×</a>
   </div>
 </div>
 
@@ -5173,9 +5173,6 @@ function finishPortalHandoff(success) {
   if (text) text.textContent = success ? "Zalogowano" : "Nie udało się zalogować";
   window.setTimeout(() => root.classList.remove("auth-pending"), success ? 700 : 1000);
 }
-document.getElementById("authBackButton")?.addEventListener("click", () => {
-  location.href = "https://koale.netlify.app/";
-});
 
 async function renderAccounts() {
   const list = document.getElementById("accountsList");
@@ -5217,7 +5214,7 @@ async function saveAccountProfile(index) {
 }
 document.getElementById("accountCreateForm")?.addEventListener("submit",createAccount);
 
-function start() {
+async function start() {
   let receivedHandoff = false;
   const params = new URLSearchParams(location.hash.slice(1));
   const handoffText = params.get("koale_auth");
