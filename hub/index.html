@@ -67,6 +67,7 @@ footer{padding:22px;text-align:center;color:#656b75;font-size:12px;border-top:1p
 <section class="grid" aria-label="Aplikacje">
 <article class="card"><div class="cardhead"><div class="cardicon">📚</div><div><h2>Koale-Zadania</h2><p class="desc">Zadania, odpowiedzi, czat i plan lekcji.</p></div></div><button class="open" id="openTasks">Otwórz Koale-Zadania <span>→</span></button></article>
 <article class="card"><div class="cardhead"><div class="cardicon">🎮</div><div><h2>Koale Gry</h2><p class="desc">Gry edukacyjne i zręcznościowe w stylu Koale.</p></div></div><button class="open" id="openGames">Otwórz Koale Gry <span>→</span></button></article>
+<article class="card"><div class="cardhead"><div class="cardicon">🧮</div><div><h2>Koale Procentownik</h2><p class="desc">Przelicz punkty na procent i ocenę.</p></div></div><button class="open" id="openPercent">Otwórz Procentownik <span>→</span></button></article>
 </section>
 <section class="admin-panel" id="adminPanel" aria-label="Panel Admina">
   <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><h2>Panel Admina</h2><p>Zarządzaj kontami i zgłoszeniami błędów.</p></div><button class="admin-action" id="closeAdminPanel" type="button">Zamknij panel</button></div>
@@ -99,6 +100,9 @@ document.getElementById('openGames').addEventListener('click',()=>{
   if (!portalAuth || !portalAuth.token || !portalAuth.user) { portalShowLogin(); return; }
   const handoff = encodeURIComponent(JSON.stringify({token:portalAuth.token,refreshToken:portalAuth.refreshToken,user:portalAuth.user}));
   location.href = 'https://koalegry.netlify.app/#koale_auth=' + handoff;
+});document.getElementById('openPercent').addEventListener('click',()=>{
+  if (!portalAuth || !portalAuth.token || !portalAuth.user) { portalShowLogin(); return; }
+  location.href = 'https://koaleprocenty.netlify.app/';
 });
 
 const PORTAL_SHEETS_API = "https://script.google.com/macros/s/AKfycbzDcUrRptgsCjE__4vaiY51H52XQe6WBtZoaxWJPC9Cl7hFB36JWTmDmszDCeiRP8hgrg/exec";
