@@ -73,6 +73,14 @@
         barFill.style.width = '0%'; bar.setAttribute('aria-valuenow', '0');
         return;
       }
+      earnedInput.max = String(maximum);
+      if (earned > maximum) {
+        percentOutput.textContent = '—%'; gradeOutput.textContent = '—';
+        gradeText.textContent = 'Popraw wpisane punkty.';
+        message.textContent = 'Zdobyte punkty nie mogą być większe niż maksymalna liczba punktów.';
+        barFill.style.width = '0%'; bar.setAttribute('aria-valuenow', '0');
+        return;
+      }
       const percentage = earned / maximum * 100;
       const grade = percentage >= 98 ? 6 : percentage >= 90 ? 5 : percentage >= 75 ? 4 : percentage >= 51 ? 3 : percentage >= 30 ? 2 : 1;
       const labels = {1:'Ocena niedostateczna',2:'Ocena dopuszczająca',3:'Ocena dostateczna',4:'Ocena dobra',5:'Ocena bardzo dobra',6:'Ocena celująca'};
