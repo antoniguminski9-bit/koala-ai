@@ -57,16 +57,6 @@ const CRAWLER_SOURCES = [
 // PODSTAWOWE FUNKCJE
 // ==========================================
 
-function jsonResponse(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": "no-store"
-    }
-  });
-}
-
 function normalizeSearchText(text) {
   return String(text || "")
     .toLocaleLowerCase("pl-PL")
@@ -975,8 +965,35 @@ ${sections.join("\n\n---\n\n")}
 // ==========================================
 // GŁÓWNA FUNKCJA NETLIFY
 // ==========================================
+const FRONTEND_ORIGIN = "https://koalezadania.netlify.app";
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": FRONTEND_ORIGIN,
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Max-Age": "86400",
+  "Vary": "Origin"
+};
+
+function jsonResponse(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      ...CORS_HEADERS,
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store"
+    }
+  });
+}
 export default async function handler(request) {
+
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: CORS_HEADERS
+    });
+  }
+
   if (request.method !== "POST") {
     return jsonResponse(
       { answer: "Ta funkcja obsługuje żądania POST." },
